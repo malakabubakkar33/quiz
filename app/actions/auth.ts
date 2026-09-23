@@ -13,6 +13,8 @@ import {
 import { sendOtpEmail } from '@/lib/email';
 import { ensureDatabaseSchema } from '@/lib/db-init';
 
+import { auth, currentUser } from '@clerk/nextjs/server';
+
 export interface SessionUser {
   userId: string;
   name: string;
@@ -22,7 +24,7 @@ export interface SessionUser {
   institutionName?: string;
   codingLevel?: string;
   avatar?: string;
-  provider: 'local';
+  provider: 'clerk' | 'local';
 }
 
 interface PendingOtpRecord {
@@ -41,29 +43,150 @@ const globalPendingOtps: Map<string, PendingOtpRecord> =
 
 /**
  * Get current authenticated user (cached per request lifecycle)
- * With graceful fallback to session cookie payload if DB experiences latency or cold starts.
+ * Connects directly to Clerk authentication with automatic Prisma user synchronization.
  */
 export const getAuthUser = cache(async (): Promise<SessionUser | null> => {
   try {
-    const session = await getSessionCookie();
-    if (!session || !session.userId) {
-      return null;
+    let clerkUserId: string | null = null;
+    try {
+      const authResult = await auth();
+      clerkUserId = authResult.userId;
+    } catch (authErr) {
+      console.warn('Clerk auth() error:', authErr);
     }
 
-    try {
-      const dbUser = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { clerkUserId: session.userId },
-            { email: session.email },
-          ],
-        },
-      });
+    // If Clerk userId is present, fetch/sync Prisma user
+    if (clerkUserId) {
+      try {
+        // Fast-path: query Prisma with 1500ms timeout
+        let dbUser = await Promise.race([
+          prisma.user.findUnique({ where: { clerkUserId } }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+        ]).catch(() => null);
+
+        if (!dbUser) {
+          // Attempt currentUser fetch with timeout
+          const clerkUser = await Promise.race([
+            currentUser().catch(() => null),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+          ]).catch(() => null);
+
+          const email = clerkUser?.emailAddresses?.[0]?.emailAddress || '';
+          const name =
+            `${clerkUser?.firstName || ''} ${clerkUser?.lastName || ''}`.trim() ||
+            clerkUser?.username ||
+            email.split('@')[0] ||
+            'Developer';
+          const username = clerkUser?.username || (email ? email.split('@')[0] : undefined);
+          const avatar = clerkUser?.imageUrl || undefined;
+
+          try {
+            if (email) {
+              const existingByEmail = await Promise.race([
+                prisma.user.findUnique({ where: { email } }),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+              ]).catch(() => null);
+
+              if (existingByEmail) {
+                dbUser = await Promise.race([
+                  prisma.user.update({
+                    where: { id: existingByEmail.id },
+                    data: {
+                      clerkUserId,
+                      name: name || existingByEmail.name,
+                      avatar: avatar || existingByEmail.avatar,
+                      lastActiveAt: new Date(),
+                    },
+                  }),
+                  new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+                ]).catch(() => null);
+              }
+            }
+
+            if (!dbUser) {
+              dbUser = await Promise.race([
+                prisma.user.upsert({
+                  where: { clerkUserId },
+                  update: {
+                    name: name || undefined,
+                    email: email || undefined,
+                    avatar: avatar || undefined,
+                    lastActiveAt: new Date(),
+                  },
+                  create: {
+                    clerkUserId,
+                    email: email || undefined,
+                    name,
+                    username,
+                    avatar,
+                    ratingPoints: 1000,
+                    lastActiveAt: new Date(),
+                  },
+                }),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
+              ]).catch(() => null);
+            }
+          } catch (syncErr) {
+            console.warn('Sync user error:', syncErr);
+          }
+
+          if (!dbUser) {
+            return {
+              userId: clerkUserId,
+              name,
+              email,
+              username,
+              avatar,
+              provider: 'clerk',
+            };
+          }
+        }
+
+        if (dbUser) {
+          return {
+            userId: dbUser.clerkUserId,
+            name: dbUser.name || dbUser.email?.split('@')[0] || 'Developer',
+            email: dbUser.email || '',
+            username: dbUser.username || undefined,
+            institutionType: dbUser.institutionType || undefined,
+            institutionName: dbUser.institutionName || undefined,
+            codingLevel: dbUser.codingLevel || undefined,
+            avatar: dbUser.avatar || undefined,
+            provider: 'clerk',
+          };
+        }
+      } catch (dbErr) {
+        console.error('Error in Clerk DB user sync:', dbErr);
+      }
+
+      // Fast fallback directly to minimal session user
+      return {
+        userId: clerkUserId,
+        name: 'Developer',
+        email: '',
+        provider: 'clerk',
+      };
+    }
+
+    // Legacy cookie check fallback for backward compatibility
+    const session = await getSessionCookie().catch(() => null);
+    if (session?.userId) {
+      const dbUser = await Promise.race([
+        prisma.user.findFirst({
+          where: {
+            OR: [
+              { clerkUserId: session.userId },
+              { email: session.email },
+            ],
+          },
+        }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+      ]).catch(() => null);
 
       if (dbUser) {
         return {
           userId: dbUser.clerkUserId,
-          name: dbUser.name || dbUser.email?.split('@')[0] || 'Developer',
+          name: dbUser.name || session.name || 'Developer',
           email: dbUser.email || session.email,
           username: dbUser.username || undefined,
           institutionType: dbUser.institutionType || undefined,
@@ -73,23 +196,16 @@ export const getAuthUser = cache(async (): Promise<SessionUser | null> => {
           provider: 'local',
         };
       }
-    } catch {
-      // Fall through to session payload fallback
+
+      return {
+        ...session,
+        provider: 'local',
+      };
     }
 
-    // Fallback directly to cryptographic session payload
-    return {
-      userId: session.userId,
-      name: session.name || session.email?.split('@')[0] || 'Developer',
-      email: session.email,
-      username: session.username || undefined,
-      provider: 'local',
-    };
-  } catch (err: any) {
-    if (err?.digest === 'DYNAMIC_SERVER_USAGE' || err?.message?.includes('Dynamic server usage')) {
-      throw err;
-    }
-    console.error('Error in getAuthUser:', err);
+    return null;
+  } catch (error) {
+    console.error('getAuthUser general error:', error);
     return null;
   }
 });

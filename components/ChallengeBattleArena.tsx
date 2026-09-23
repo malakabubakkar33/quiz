@@ -35,6 +35,7 @@ import {
   Sparkles,
   ShieldAlert,
 } from 'lucide-react';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface ChallengeBattleArenaProps {
   initialMatch: ChallengeMatchData;
@@ -59,6 +60,7 @@ export function ChallengeBattleArena({
   const [hasSubmitted, setHasSubmitted] = useState(
     isChallenger ? !!initialMatch.myResult.completedAt : !!initialMatch.myResult.completedAt
   );
+  const [showEarlySubmitConfirm, setShowEarlySubmitConfirm] = useState(false);
 
   // Opponent Live Progress (0 to totalQuestions)
   const [opponentAnsweredCount, setOpponentAnsweredCount] = useState(
@@ -199,10 +201,8 @@ export function ChallengeBattleArena({
 
     const answeredCount = Object.keys(selectedAnswers).length;
     if (answeredCount < myQuestions.length) {
-      const confirmSubmit = window.confirm(
-        `You have answered ${answeredCount} of ${myQuestions.length} questions. Are you sure you want to submit? Unanswered questions will count as incorrect.`
-      );
-      if (!confirmSubmit) return;
+      setShowEarlySubmitConfirm(true);
+      return;
     }
 
     await executeSubmission();
@@ -769,6 +769,21 @@ export function ChallengeBattleArena({
           </p>
         </div>
       )}
+
+      {/* Early Duel Submit Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showEarlySubmitConfirm}
+        variant="warning"
+        title="Submit Duel Early?"
+        message={`You have answered ${Object.keys(selectedAnswers).length} of ${myQuestions.length} questions. Are you sure you want to submit? Any unanswered questions will be graded as incorrect.`}
+        confirmText="Yes, Submit Duel"
+        cancelText="Keep Answering"
+        onConfirm={async () => {
+          setShowEarlySubmitConfirm(false);
+          await executeSubmission();
+        }}
+        onCancel={() => setShowEarlySubmitConfirm(false)}
+      />
     </div>
   );
 }

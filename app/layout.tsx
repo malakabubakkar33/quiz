@@ -8,6 +8,7 @@ import { RouteProgress } from '@/components/RouteProgress';
 import { NetworkStatus } from '@/components/NetworkStatus';
 import { OnboardingProvider } from '@/components/OnboardingProvider';
 import { ChallengeNotificationProvider } from '@/components/ChallengeNotificationProvider';
+import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -15,7 +16,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#080c14',
+  themeColor: '#F7F8FA',
 };
 
 export const metadata: Metadata = {
@@ -38,40 +39,48 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased dark overflow-x-hidden" suppressHydrationWarning>
+    <html
+      lang="en"
+      className="h-full antialiased overflow-x-hidden"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;0,900;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className="min-h-screen flex flex-col bg-[#070b14] text-slate-100 font-sans relative bg-grid-pattern selection:bg-[#00d9ff]/30 selection:text-[#00d9ff] overflow-x-hidden w-full max-w-full"
+        className="min-h-screen flex flex-col bg-page text-navy-primary bg-[#F7F8FA] text-[#14213D] font-academic relative selection:bg-[#1769E0]/20 selection:text-[#1769E0] overflow-x-hidden w-full max-w-full"
         suppressHydrationWarning
       >
-        {/* Startup & Navigation Loaders */}
-        <Suspense fallback={null}>
-          <RouteProgress />
-        </Suspense>
+        <ClerkProvider>
+          {/* Startup & Navigation Loaders */}
+          <Suspense fallback={null}>
+            <RouteProgress />
+          </Suspense>
 
-        {/* Live Network & Offline Monitor */}
-        <NetworkStatus />
+          {/* Live Network & Offline Monitor */}
+          <NetworkStatus />
 
-        {/* Global First-Time & Existing User Onboarding Session */}
-        <OnboardingProvider />
+          {/* Global First-Time & Existing User Onboarding Session */}
+          <OnboardingProvider />
 
-        {/* Global 1v1 Friend Challenge Duel Notification Listener */}
-        <ChallengeNotificationProvider />
+          {/* Global 1v1 Friend Challenge Duel Notification Listener */}
+          <ChallengeNotificationProvider />
 
-        {/* Rich Ambient Glass Lighting Mesh */}
-        <div className="fixed inset-0 pointer-events-none radial-glow -z-10" />
-        <div className="fixed -top-40 left-1/4 w-[500px] h-[500px] bg-[#00d9ff]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-        <div className="fixed top-1/3 -right-40 w-[550px] h-[550px] bg-sky-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-        <div className="fixed bottom-10 -left-40 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+          {/* Left Navigation Sidebar */}
+          <Sidebar />
 
-        {/* Left Navigation Sidebar */}
-        <Sidebar />
-
-        {/* Dynamic Desktop Layout Wrapper with Integrated Header */}
-        <AppLayoutWrapper>
-          <Header />
-          <main className="flex-1 flex flex-col w-full relative z-0">{children}</main>
-          <Footer />
-        </AppLayoutWrapper>
+          {/* Dynamic Desktop Layout Wrapper with Integrated Header */}
+          <AppLayoutWrapper>
+            <Header />
+            <main className="flex-1 flex flex-col w-full relative z-0">{children}</main>
+          </AppLayoutWrapper>
+        </ClerkProvider>
       </body>
     </html>
   );

@@ -6,7 +6,7 @@ import { ChallengeHub } from '@/components/ChallengeHub';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '1v1 Challenge • Challenge Your Friends | CodeQuiz Arena',
+  title: '1v1 Challenge • Challenge Friends | QuizCode',
   description: 'Find your friend, send a challenge, and compete in real-time coding quizzes.',
 };
 
@@ -28,7 +28,7 @@ export default async function ChallengeVsPage() {
     ]);
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] flex flex-col justify-start bg-[#070B14] text-white">
+    <main className="min-h-[calc(100vh-4rem)] flex flex-col justify-start bg-[#F7F8FA] text-[#14213D]">
       <ChallengeHub
         courses={courses as any}
         initialPendingIncoming={incomingPending}

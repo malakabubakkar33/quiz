@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { CourseCard } from '@/components/CourseCard';
-import { Search, BookOpen, Layers, Award, Sparkles, Filter, X } from 'lucide-react';
+import { Search, BookOpen, Layers, X, Sparkles } from 'lucide-react';
 
 interface CourseItem {
   id: string;
@@ -21,7 +21,7 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Tracks' },
+  { id: 'all', label: 'All Courses' },
   { id: 'frontend', label: 'Frontend' },
   { id: 'backend', label: 'Backend' },
   { id: 'database', label: 'Databases' },
@@ -71,43 +71,45 @@ export function CoursesClient({ initialCourses }: Props) {
   }, [initialCourses]);
 
   return (
-    <div className="space-y-8">
-      {/* Search & Category Filter Control Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3 rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-xl">
+    <div className="space-y-6">
+      {/* ── COURSE FILTRATION BAR (HEADER SHAPED) ── */}
+      <div className="w-full bg-white border-2 border-[#E5EAF0] rounded-2xl p-2.5 sm:p-3 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         {/* Search Input Box */}
         <div className="relative flex-1 max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#5B667A]">
             <Search className="w-4 h-4" />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tracks, topics (e.g. React, SQL, Flexbox)..."
-            className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-white text-xs sm:text-sm placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+            placeholder="Search courses, topics (e.g. React, SQL, Flexbox)..."
+            className="w-full pl-10 pr-9 py-2 rounded-xl bg-[#F7F8FA] border border-[#E5EAF0] text-[#14213D] text-xs sm:text-sm placeholder:text-[#5B667A] focus:outline-none focus:border-[#1769E0] focus:bg-white transition-all"
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#5B667A] hover:text-[#14213D] cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+        {/* Category Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
           {CATEGORIES.map((cat) => {
             const isActive = selectedCategory === cat.id;
             return (
               <button
                 key={cat.id}
+                type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md shadow-cyan-500/20'
-                    : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] border border-white/5'
+                    ? 'bg-[#1769E0] text-white shadow-xs'
+                    : 'bg-[#F7F8FA] hover:bg-[#E5EAF0] text-[#14213D] border border-[#E5EAF0]'
                 }`}
               >
                 {cat.label}
@@ -115,39 +117,45 @@ export function CoursesClient({ initialCourses }: Props) {
             );
           })}
         </div>
+
+        {/* Total Bank Indicator */}
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F0F4F8] border border-[#E5EAF0] text-xs text-[#5B667A] font-medium shrink-0">
+          <Layers className="w-3.5 h-3.5 text-[#1769E0]" />
+          <span>
+            Bank: <strong className="text-[#14213D] font-bold">~{totalQuestions}</strong> Qs
+          </span>
+        </div>
       </div>
 
-      {/* Stats Summary Bar */}
-      <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-        <span className="flex items-center gap-1.5 font-medium">
-          Showing <strong className="text-white font-bold">{filteredCourses.length}</strong> of{' '}
-          <strong className="text-cyan-400">{initialCourses.length}</strong> available tracks
-        </span>
-        <span className="hidden sm:inline text-slate-500 font-mono">
-          Total Question Bank: ~{totalQuestions} questions
+      {/* Showing Count Status */}
+      <div className="flex items-center justify-between text-xs text-[#5B667A] px-1">
+        <span>
+          Showing <strong className="text-[#14213D] font-bold">{filteredCourses.length}</strong> of{' '}
+          <strong className="text-[#1769E0] font-bold">{initialCourses.length}</strong> available courses
         </span>
       </div>
 
       {/* Courses Grid */}
       {filteredCourses.length === 0 ? (
-        <div className="text-center py-20 px-4 rounded-3xl border border-white/10 bg-slate-900/40 backdrop-blur-xl">
-          <BookOpen className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-slate-200 mb-1">No matching tracks found</h3>
-          <p className="text-sm text-slate-400 mb-4">
-            Try adjusting your search query or switching back to &ldquo;All Tracks&rdquo;.
+        <div className="text-center py-16 px-4 rounded-2xl border-2 border-[#E5EAF0] bg-white shadow-xs">
+          <BookOpen className="w-10 h-10 text-[#5B667A] mx-auto mb-2.5" />
+          <h3 className="text-base font-bold text-[#14213D] mb-1">No matching courses found</h3>
+          <p className="text-xs text-[#5B667A] mb-4">
+            Try adjusting your search query or switching back to &ldquo;All Courses&rdquo;.
           </p>
           <button
+            type="button"
             onClick={() => {
               setSearchQuery('');
               setSelectedCategory('all');
             }}
-            className="px-4 py-2 rounded-xl bg-cyan-400 text-slate-950 font-bold text-xs hover:bg-cyan-300 transition-colors"
+            className="px-4 py-2 rounded-xl bg-[#1769E0] hover:bg-[#1257BD] text-white font-bold text-xs transition-colors cursor-pointer"
           >
-            Clear Filters
+            Reset Filters
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filteredCourses.map((course, index) => (
             <CourseCard key={course.id} course={course} index={index} />
           ))}

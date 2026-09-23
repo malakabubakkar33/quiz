@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Loader2, BookOpen, Layers, ArrowRight, X, Code2 } from 'lucide-react';
+import { Search, Loader2, Layers, ArrowRight, X, Code2 } from 'lucide-react';
 import {
   getCourseSearchResults,
   type CourseSearchResultItem,
   type TopicSearchResultItem,
 } from '@/app/actions/quiz';
+import { CourseTechIcon } from './CourseTechIcon';
 
 export function CourseSearch() {
   const router = useRouter();
@@ -133,11 +134,11 @@ export function CourseSearch() {
     <div ref={containerRef} className="relative w-full max-w-md lg:max-w-lg">
       {/* Search Input Box */}
       <div className="relative flex items-center">
-        <div className="absolute left-3.5 flex items-center pointer-events-none text-slate-400">
+        <div className="absolute left-3.5 flex items-center pointer-events-none text-[#5B667A]">
           {isLoading ? (
-            <Loader2 className="w-4 h-4 text-[#00d9ff] animate-spin" />
+            <Loader2 className="w-4 h-4 text-[#1769E0] animate-spin" />
           ) : (
-            <Search className="w-4 h-4 text-slate-400" />
+            <Search className="w-4 h-4 text-[#5B667A]" />
           )}
         </div>
 
@@ -151,7 +152,7 @@ export function CourseSearch() {
           }}
           onKeyDown={handleKeyDown}
           placeholder="Search courses, topics, or tracks..."
-          className="w-full pl-10 pr-9 py-2 rounded-full bg-slate-900/80 border border-white/10 hover:border-cyan-500/40 focus:border-[#00d9ff] focus:ring-2 focus:ring-[#00d9ff]/20 text-white text-xs sm:text-sm placeholder:text-slate-500 transition-all shadow-inner focus:outline-none backdrop-blur-xl"
+          className="w-full pl-10 pr-9 py-2 rounded-xl text-xs sm:text-sm transition-all focus:outline-none bg-[#F0F4F8] border border-[#E5EAF0] border-card hover:border-[#CBD5E1] focus:bg-[#FFFFFF] focus:border-[#1769E0] focus:ring-4 focus:ring-[#1769E0]/15 text-[#14213D] text-navy-primary placeholder:text-[#5B667A] shadow-2xs font-medium"
         />
 
         {query && (
@@ -162,34 +163,38 @@ export function CourseSearch() {
               setIsOpen(false);
               inputRef.current?.focus();
             }}
-            className="absolute right-3 p-0.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="absolute right-3 p-0.5 rounded-full text-[#5B667A] hover:text-[#14213D] transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
-      {/* Animated Dropdown Menu */}
+      {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl bg-slate-950/95 border border-cyan-500/30 backdrop-blur-2xl shadow-2xl shadow-cyan-950/60 p-2.5 z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl p-3 z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150 bg-white bg-card-white border border-[#E5EAF0] border-card shadow-xl">
           {isLoading && !hasResults ? (
-            <div className="flex items-center justify-center py-8 text-xs text-slate-400 gap-2 font-mono">
-              <Loader2 className="w-4 h-4 text-[#00d9ff] animate-spin" />
+            <div className="flex items-center justify-center py-8 text-xs text-[#5B667A] gap-2 font-mono">
+              <Loader2 className="w-4 h-4 animate-spin text-[#1769E0]" />
               <span>Searching coding tracks...</span>
             </div>
           ) : !hasResults ? (
             <div className="py-6 px-4 text-center space-y-1">
-              <p className="text-xs font-semibold text-slate-300">No courses or topics found for &ldquo;{query}&rdquo;</p>
-              <p className="text-[11px] text-slate-500">Try searching for &quot;JavaScript&quot;, &quot;React&quot;, &quot;HTML&quot;, or &quot;CSS&quot;</p>
+              <p className="text-xs font-bold text-[#14213D]">
+                No courses or topics found for &ldquo;{query}&rdquo;
+              </p>
+              <p className="text-[11px] text-[#5B667A]">
+                Try searching for &quot;JavaScript&quot;, &quot;React&quot;, &quot;HTML&quot;, or &quot;CSS&quot;
+              </p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-1">
+            <div className="space-y-3 max-h-[380px] overflow-y-auto scrollbar-thin pr-1">
               {/* SECTION 1: COURSES */}
               {courses.length > 0 && (
                 <div>
-                  <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-cyan-400 flex items-center justify-between">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between text-[#1769E0]">
                     <span>Courses</span>
-                    <span className="text-slate-500 font-mono font-normal">{courses.length} matches</span>
+                    <span className="text-[#5B667A] font-mono font-normal">{courses.length} matches</span>
                   </div>
 
                   <div className="space-y-1 mt-1">
@@ -202,23 +207,19 @@ export function CourseSearch() {
                           onClick={() => handleSelectCourse(course.slug)}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-all duration-150 group cursor-pointer ${
                             isSelected
-                              ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-sm'
-                              : 'hover:bg-white/5 border border-transparent text-slate-200'
+                              ? 'bg-[#EBF3FC] border border-[#D5E5F9] text-[#1769E0] shadow-xs'
+                              : 'hover:bg-[#F0F4F8] border border-transparent text-[#14213D]'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-cyan-400 shrink-0 font-mono text-xs font-bold group-hover:scale-105 transition-transform">
-                              {course.icon ? (
-                                <span className="text-sm">{course.icon}</span>
-                              ) : (
-                                <Code2 className="w-4 h-4" />
-                              )}
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-[#10233F] text-white p-1.5 shadow-xs">
+                              <CourseTechIcon slug={course.slug} className="w-4 h-4" />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors truncate">
+                              <div className="text-xs font-bold text-[#14213D] group-hover:text-[#1769E0] transition-colors truncate">
                                 {course.name}
                               </div>
-                              <div className="text-[10px] text-slate-400 font-mono flex items-center gap-2">
+                              <div className="text-[10px] text-[#5B667A] font-mono flex items-center gap-2">
                                 <span>{course.topicCount} Topics</span>
                                 <span>•</span>
                                 <span>{course.questionCount} Questions</span>
@@ -226,7 +227,7 @@ export function CourseSearch() {
                             </div>
                           </div>
 
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                          <ArrowRight className="w-3.5 h-3.5 text-[#5B667A] group-hover:text-[#1769E0] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
                         </button>
                       );
                     })}
@@ -237,9 +238,9 @@ export function CourseSearch() {
               {/* SECTION 2: TOPICS */}
               {topics.length > 0 && (
                 <div>
-                  <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between border-t border-white/5 pt-2">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between border-t border-[#E5EAF0] pt-2 text-[#5B667A]">
                     <span>Topics</span>
-                    <span className="text-slate-500 font-mono font-normal">{topics.length} topics</span>
+                    <span className="text-[#5B667A] font-mono font-normal">{topics.length} topics</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1">
@@ -254,16 +255,16 @@ export function CourseSearch() {
                           onClick={() => handleSelectTopic(topic.courseSlug, topic.topicName)}
                           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all duration-150 group cursor-pointer ${
                             isSelected
-                              ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300'
-                              : 'hover:bg-white/5 border border-transparent text-slate-300'
+                              ? 'bg-[#EBF3FC] border border-[#D5E5F9] text-[#1769E0]'
+                              : 'hover:bg-[#F0F4F8] border border-transparent text-[#14213D]'
                           }`}
                         >
-                          <Layers className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                          <Layers className="w-3.5 h-3.5 shrink-0 text-[#1769E0]" />
                           <div className="min-w-0 flex-1">
-                            <div className="text-xs font-medium text-slate-200 group-hover:text-white truncate">
+                            <div className="text-xs font-semibold text-[#14213D] group-hover:text-[#1769E0] truncate">
                               {topic.topicName}
                             </div>
-                            <div className="text-[9px] text-slate-500 font-mono truncate">
+                            <div className="text-[9px] text-[#5B667A] font-mono truncate">
                               in {topic.courseName}
                             </div>
                           </div>
@@ -275,15 +276,15 @@ export function CourseSearch() {
               )}
 
               {/* Footer CTA */}
-              <div className="pt-2 border-t border-white/5 px-2 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500 font-mono">Press ↑↓ to navigate • ↵ to select</span>
+              <div className="pt-2 border-t border-[#E5EAF0] px-2 flex items-center justify-between text-[11px] text-[#5B667A]">
+                <span className="font-mono">Press ↑↓ to navigate • ↵ to select</span>
                 <button
                   type="button"
                   onClick={() => {
                     setIsOpen(false);
                     router.push('/courses');
                   }}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 transition-colors"
+                  className="font-bold flex items-center gap-1 text-[#1769E0] hover:text-[#1257BD] transition-colors"
                 >
                   <span>View all courses</span>
                   <ArrowRight className="w-3 h-3" />

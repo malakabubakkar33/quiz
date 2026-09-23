@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 
 export function CountdownScreen({ redirectUrl }: { redirectUrl: string }) {
   const router = useRouter();
@@ -16,7 +16,7 @@ export function CountdownScreen({ redirectUrl }: { redirectUrl: string }) {
     }
 
     if (phase === 'go') {
-      const timer = setTimeout(() => setPhase('done'), 800);
+      const timer = setTimeout(() => setPhase('done'), 700);
       return () => clearTimeout(timer);
     }
 
@@ -27,41 +27,37 @@ export function CountdownScreen({ redirectUrl }: { redirectUrl: string }) {
         } else {
           setCount((c) => c - 1);
         }
-      }, 1000);
+      }, 900);
       return () => clearTimeout(timer);
     }
   }, [count, phase, redirectUrl, router]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#080c14]">
-      {/* Ambient glow */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-[500px] h-[500px] rounded-full bg-cyan-500/10 blur-[100px]" />
-      </div>
-
-      <div className="relative z-10 text-center">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F7F8FA] select-none">
+      <div className="relative z-10 text-center space-y-6">
         {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Zap className="w-6 h-6 text-cyan-400" />
-            <span className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Get Ready!</span>
-          </div>
-          <p className="text-sm text-slate-500">Your quiz is about to begin</p>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E5EAF0] text-[#1769E0] text-xs font-bold shadow-xs">
+          <GraduationCap className="w-4 h-4 text-[#1769E0]" />
+          <span className="uppercase tracking-wider">Practice Arena • Starting Session</span>
         </div>
+
+        <p className="text-xs sm:text-sm text-[#5B667A] font-medium">
+          Prepare your focus. Question timer will start immediately.
+        </p>
 
         {/* Countdown Number */}
         {phase === 'counting' && count > 0 && (
-          <div key={count} className="animate-countdown">
-            <span className="text-[120px] sm:text-[160px] font-black text-white tabular-nums leading-none drop-shadow-2xl">
+          <div key={count} className="py-2">
+            <span className="text-[100px] sm:text-[140px] font-black text-[#14213D] font-serif-title tabular-nums leading-none tracking-tight">
               {count}
             </span>
           </div>
         )}
 
-        {/* GO! */}
+        {/* START! */}
         {phase === 'go' && (
-          <div className="animate-scale-in">
-            <span className="text-[80px] sm:text-[100px] font-black bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent leading-none">
+          <div className="py-2 animate-scale-in">
+            <span className="text-[72px] sm:text-[96px] font-black text-[#1769E0] font-serif-title leading-none tracking-tight">
               START!
             </span>
           </div>
@@ -69,9 +65,9 @@ export function CountdownScreen({ redirectUrl }: { redirectUrl: string }) {
 
         {/* Loading state */}
         {phase === 'done' && (
-          <div className="animate-fade-in flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-slate-400">Loading quiz...</span>
+          <div className="flex flex-col items-center gap-3 pt-4">
+            <div className="w-8 h-8 rounded-full border-2 border-[#E5EAF0] border-t-[#1769E0] animate-spin" />
+            <span className="text-xs font-semibold text-[#5B667A]">Loading questions...</span>
           </div>
         )}
       </div>

@@ -446,7 +446,7 @@ export function ChallengeHub({
         {/* Floating Holographic Cyber Code Decors (Visible on larger screens) */}
         <div className="hidden xl:block absolute top-12 right-12 z-10 pointer-events-none opacity-80">
           <div className="p-3 rounded-xl bg-[#090F1E]/80 border border-cyan-500/20 backdrop-blur-md text-[11px] font-mono text-cyan-300 shadow-xl space-y-1">
-            <div className="text-slate-500">// Realtime Duel Socket</div>
+            <div className="text-slate-500">{'// Realtime Duel Socket'}</div>
             <div className="text-purple-400">const <span className="text-cyan-300">challenge</span> = {'{'}</div>
             <div className="pl-3">mode: <span className="text-amber-300">&apos;1v1&apos;</span>,</div>
             <div className="pl-3">accuracy: <span className="text-emerald-300">&apos;100%&apos;</span>,</div>

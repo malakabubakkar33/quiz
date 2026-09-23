@@ -3,8 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ClientQuestion, submitSoloQuiz } from '@/app/actions/quiz';
-import { playSelect, playVictory, isSoundEnabled, setSoundEnabled, playQuizBgm, stopQuizBgm } from '@/lib/sound';
-import { Timer, Code, AlertTriangle, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
+import {
+  playSelect,
+  playVictory,
+  isSoundEnabled,
+  setSoundEnabled,
+  playQuizBgm,
+  stopQuizBgm,
+} from '@/lib/sound';
+import { Timer, Code, AlertTriangle, Volume2, VolumeX, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface QuizSessionProps {
   questions: ClientQuestion[];
@@ -12,10 +20,12 @@ interface QuizSessionProps {
   courseSlug: string;
   courseId?: string;
   quizName?: string;
-  /** For room quizzes — uses different submit */
   roomMode?: boolean;
   roomCode?: string;
-  onRoomSubmit?: (answers: { questionId: string; selectedAnswer: number }[], timeSec: number) => Promise<void>;
+  onRoomSubmit?: (
+    answers: { questionId: string; selectedAnswer: number }[],
+    timeSec: number
+  ) => Promise<void>;
 }
 
 export function QuizSession({
@@ -35,6 +45,7 @@ export function QuizSession({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(true);
+  const [showExitModal, setShowExitModal] = useState(false);
 
   // Answer feedback state
   const [feedbackState, setFeedbackState] = useState<'idle' | 'showing'>('idle');
@@ -79,89 +90,113 @@ export function QuizSession({
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleAutoSubmit = useCallback(async (lastOptionIndex?: number) => {
-    try {
-      setIsSubmitting(true);
-      setErrorMessage(null);
-      stopQuizBgm();
-      playVictory();
+  const handleAutoSubmit = useCallback(
+    async (lastOptionIndex?: number) => {
+      try {
+        setIsSubmitting(true);
+        setErrorMessage(null);
+        stopQuizBgm();
+        playVictory();
 
-      const finalAnswers = { ...answers };
-      if (lastOptionIndex !== undefined && currentQ) {
-        finalAnswers[currentQ.id] = lastOptionIndex;
+        const finalAnswers = { ...answers };
+        if (lastOptionIndex !== undefined && currentQ) {
+          finalAnswers[currentQ.id] = lastOptionIndex;
+        }
+
+        const payloadAnswers = questions.map((q) => ({
+          questionId: q.id,
+          selectedAnswer: finalAnswers[q.id] !== undefined ? finalAnswers[q.id] : -1,
+        }));
+
+        if (roomMode && onRoomSubmit) {
+          await onRoomSubmit(payloadAnswers, secondsElapsed);
+        } else {
+          const res = await submitSoloQuiz({
+            courseSlug,
+            quizName: quizName || `${courseName} Quiz`,
+            answers: payloadAnswers,
+            timeTakenSec: secondsElapsed,
+          });
+          router.push(`/quiz/result/${res.attemptId}`);
+        }
+      } catch (err: unknown) {
+        console.error('Quiz submission error:', err);
+        setErrorMessage(
+          err instanceof Error ? err.message : 'Failed to submit quiz. Please try again.'
+        );
+        setIsSubmitting(false);
+      }
+    },
+    [
+      answers,
+      currentQ,
+      questions,
+      roomMode,
+      onRoomSubmit,
+      secondsElapsed,
+      courseSlug,
+      quizName,
+      courseName,
+      router,
+    ]
+  );
+
+  const handleSelectOption = useCallback(
+    (optionIndex: number) => {
+      if (feedbackState === 'showing') return;
+
+      playSelect();
+
+      const autoAdvanceEnabled =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('codequiz_auto_advance') !== 'false'
+          : true;
+      const instantFeedbackEnabled =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('codequiz_instant_feedback') !== 'false'
+          : true;
+
+      setAnswers((prev) => ({ ...prev, [currentQ.id]: optionIndex }));
+      if (instantFeedbackEnabled) {
+        setSelectedForFeedback(optionIndex);
+        setFeedbackState('showing');
       }
 
-      const payloadAnswers = questions.map((q) => ({
-        questionId: q.id,
-        selectedAnswer: finalAnswers[q.id] !== undefined ? finalAnswers[q.id] : -1,
-      }));
+      const advanceDelay = autoAdvanceEnabled ? 700 : 1500;
 
-      if (roomMode && onRoomSubmit) {
-        await onRoomSubmit(payloadAnswers, secondsElapsed);
-      } else {
-        const res = await submitSoloQuiz({
-          courseSlug,
-          quizName: quizName || `${courseName} Quiz`,
-          answers: payloadAnswers,
-          timeTakenSec: secondsElapsed,
-        });
-        router.push(`/quiz/result/${res.attemptId}`);
-      }
-    } catch (err: unknown) {
-      console.error('Quiz submission error:', err);
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to submit quiz. Please try again.');
-      setIsSubmitting(false);
-    }
-  }, [answers, currentQ, questions, roomMode, onRoomSubmit, secondsElapsed, courseSlug, quizName, courseName, router]);
+      feedbackTimerRef.current = setTimeout(() => {
+        setFeedbackState('idle');
+        setSelectedForFeedback(null);
 
-  const handleSelectOption = useCallback((optionIndex: number) => {
-    if (feedbackState === 'showing') return; // prevent double-click during feedback
+        if (currentIndex < totalQuestions - 1) {
+          setCurrentIndex((prev) => prev + 1);
+        } else {
+          handleAutoSubmit(optionIndex);
+        }
+      }, advanceDelay);
+    },
+    [currentIndex, totalQuestions, currentQ, feedbackState, handleAutoSubmit]
+  );
 
-    // Play synthesized option select click sound
-    playSelect();
-
-    // Read user preferences
-    const autoAdvanceEnabled = typeof window !== 'undefined' ? localStorage.getItem('codequiz_auto_advance') !== 'false' : true;
-    const instantFeedbackEnabled = typeof window !== 'undefined' ? localStorage.getItem('codequiz_instant_feedback') !== 'false' : true;
-
-    // Record answer
-    setAnswers((prev) => ({ ...prev, [currentQ.id]: optionIndex }));
-    if (instantFeedbackEnabled) {
-      setSelectedForFeedback(optionIndex);
-      setFeedbackState('showing');
-    }
-
-    // Auto-advance delay
-    const advanceDelay = autoAdvanceEnabled ? 700 : 1800;
-
-    feedbackTimerRef.current = setTimeout(() => {
-      setFeedbackState('idle');
-      setSelectedForFeedback(null);
-
-      if (currentIndex < totalQuestions - 1) {
-        setCurrentIndex((prev) => prev + 1);
-      } else {
-        // Auto-submit on last question
-        handleAutoSubmit(optionIndex);
-      }
-    }, advanceDelay);
-  }, [currentIndex, totalQuestions, currentQ, feedbackState, handleAutoSubmit]);
-
-  const difficultyColors: Record<string, string> = {
-    EASY: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    MEDIUM: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    HARD: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  const difficultyBadges: Record<string, string> = {
+    EASY: 'bg-[#E8F8F0] text-[#0F8A52] border-[#C2F0D8]',
+    MEDIUM: 'bg-[#FEF9E7] text-[#B45309] border-[#FDE68A]',
+    HARD: 'bg-[#FDF2F2] text-[#D92D20] border-[#FECDCA]',
   };
 
   if (totalQuestions === 0 || !currentQ) {
     return (
       <div className="w-full max-w-lg mx-auto px-4 py-24 text-center space-y-4">
-        <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
-          <h2 className="text-xl font-bold text-white">No Questions Available</h2>
-          <p className="text-xs text-slate-400">There are no questions found for this quiz session.</p>
+        <div className="p-8 rounded-3xl bg-white border-2 border-[#E5EAF0] shadow-xs space-y-4">
+          <h2 className="text-xl font-bold text-[#14213D] font-serif-title">
+            No Questions Available
+          </h2>
+          <p className="text-xs text-[#5B667A]">
+            There are no questions found for this quiz session.
+          </p>
           <button
             onClick={() => router.push('/courses')}
-            className="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#1769E0] hover:bg-[#1257BD] transition-colors cursor-pointer"
           >
             Back to Courses
           </button>
@@ -172,54 +207,51 @@ export function QuizSession({
 
   if (isSubmitting) {
     return (
-      <div className="w-full max-w-4xl mx-auto px-4 py-24 text-center">
-        <div className="flex flex-col items-center gap-4 animate-fade-in">
-          <div className="w-12 h-12 border-3 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-          <h2 className="text-xl font-bold text-white">Submitting your answers...</h2>
-          <p className="text-sm text-slate-400">Please wait while we grade your quiz</p>
+      <div className="w-full max-w-2xl mx-auto px-4 py-28 text-center">
+        <div className="p-8 rounded-3xl bg-white border-2 border-[#E5EAF0] shadow-xs flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-3 border-[#E5EAF0] border-t-[#1769E0] rounded-full animate-spin" />
+          <h2 className="text-xl font-bold text-[#14213D] font-serif-title">
+            Grading your answers...
+          </h2>
+          <p className="text-xs text-[#5B667A]">
+            Calculating your score, accuracy rating, and review breakdown.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify-start max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative">
-      {/* Ambient background glows for question glass refraction */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
-      <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
-
-      {/* Glass Header HUD Bar */}
-      <div className="flex items-center justify-between gap-2 sm:gap-4 mb-5 pb-3 sm:pb-4 border-b border-white/[0.08] relative z-10">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+    <div className="w-full min-h-[85vh] flex flex-col justify-start max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-[#14213D] select-none">
+      {/* ── TOP HUD BAR ── */}
+      <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-[#E5EAF0]">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
-            onClick={() => {
-              if (confirm('Are you sure you want to exit this quiz session? Any unsaved progress will be lost.')) {
-                stopQuizBgm();
-                router.push(roomMode ? '/join-quiz' : '/courses');
-              }
-            }}
-            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/40 text-slate-300 hover:text-rose-300 transition-all text-xs font-semibold shadow-sm cursor-pointer group shrink-0"
+            onClick={() => setShowExitModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#FDF2F2] border border-[#E5EAF0] hover:border-[#FECDCA] text-[#5B667A] hover:text-[#D92D20] transition-all text-xs font-bold shadow-2xs cursor-pointer group shrink-0"
             title="Exit quiz session"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-cyan-400 group-hover:text-rose-400 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="hidden sm:inline">Exit</span>
+            <ArrowLeft className="w-3.5 h-3.5 text-[#5B667A] group-hover:text-[#D92D20] group-hover:-translate-x-0.5 transition-transform" />
+            <span>Exit</span>
           </button>
 
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wider truncate max-w-[160px] sm:max-w-none">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
-              <span className="truncate">{courseName} {roomMode && roomCode && `• Room #${roomCode}`}</span>
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1769E0] uppercase tracking-wider truncate">
+              <span className="w-2 h-2 rounded-full bg-[#1769E0] animate-pulse shrink-0" />
+              <span className="truncate">
+                {courseName} {roomMode && roomCode && `• Room #${roomCode}`}
+              </span>
             </div>
-            <h1 className="text-base sm:text-2xl font-black text-white tracking-tight truncate">
+            <h1 className="text-base sm:text-xl font-bold text-[#14213D] font-serif-title tracking-tight truncate">
               Question {currentIndex + 1}{' '}
-              <span className="text-slate-400 text-xs sm:text-sm font-normal">of {totalQuestions}</span>
+              <span className="text-[#5B667A] text-xs font-normal">of {totalQuestions}</span>
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Audio Mute/Unmute Toggle Button */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Audio Toggle */}
           <button
             type="button"
             onClick={() => {
@@ -228,93 +260,93 @@ export function QuizSession({
               setSoundEnabled(next);
             }}
             title={soundOn ? 'Sound is ON (click to mute)' : 'Sound is OFF (click to unmute)'}
-            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] backdrop-blur-xl border border-white/10 text-slate-300 hover:text-white transition-all cursor-pointer text-xs font-semibold shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-[#F7F8FA] border border-[#E5EAF0] text-[#5B667A] hover:text-[#14213D] transition-all cursor-pointer text-xs font-bold shadow-2xs"
           >
             {soundOn ? (
               <>
-                <Volume2 className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <Volume2 className="w-3.5 h-3.5 text-[#1769E0]" />
                 <span className="hidden sm:inline">Audio</span>
               </>
             ) : (
               <>
-                <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+                <VolumeX className="w-3.5 h-3.5 text-[#5B667A]" />
                 <span className="hidden sm:inline">Muted</span>
               </>
             )}
           </button>
 
-          {/* Glass Timer Pill */}
-          <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-white/[0.05] backdrop-blur-xl border border-white/10 shadow-inner">
-            <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 animate-pulse" />
-            <span className="font-mono text-xs sm:text-sm font-bold text-slate-100">
+          {/* Timer Pill */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E5EAF0] shadow-2xs">
+            <Timer className="w-3.5 h-3.5 text-[#1769E0]" />
+            <span className="font-mono text-xs sm:text-sm font-bold text-[#14213D]">
               {formatTime(secondsElapsed)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full mb-8 relative z-10">
-        <div className="flex justify-between text-xs text-slate-400 mb-2 font-medium">
+      {/* ── PROGRESS BAR ── */}
+      <div className="w-full mb-6">
+        <div className="flex justify-between text-xs text-[#5B667A] mb-1.5 font-medium">
           <span>
-            Progress: <strong className="text-slate-200">{answeredCount}</strong> of {totalQuestions} answered
+            Answered: <strong className="text-[#14213D]">{answeredCount}</strong> of{' '}
+            {totalQuestions}
           </span>
-          <span className="font-mono font-bold text-cyan-400">{progressPercent}%</span>
+          <span className="font-mono font-bold text-[#1769E0]">{progressPercent}%</span>
         </div>
-        <div className="w-full h-2.5 rounded-full bg-slate-900/80 border border-white/[0.08] p-0.5 overflow-hidden backdrop-blur-md">
+        <div className="w-full h-2 rounded-full bg-[#E5EAF0] overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-500 transition-all duration-500 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.5)]"
+            className="h-full bg-[#1769E0] transition-all duration-300 rounded-full"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
-      {/* Question Card (Glassmorphism with Animated Entrance per Question) */}
+      {/* ── QUESTION CARD ── */}
       <div
         key={currentQ.id}
-        className="glass-panel rounded-3xl p-4 sm:p-9 relative shadow-2xl overflow-hidden mb-8 border border-white/15 animate-card-entrance"
+        className="rounded-3xl bg-white border-2 border-[#E5EAF0] p-5 sm:p-8 shadow-xs relative mb-6 animate-fade-in"
       >
-        {/* Top ambient glass specular sheen & interior light */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent pointer-events-none" />
-        <div className="absolute -top-24 -right-24 w-72 h-72 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-
         {/* Meta badges */}
-        <div className="flex flex-wrap items-center gap-2 mb-4 relative z-10">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
           {currentQ.topic && (
-            <span className="px-3 py-1 text-xs font-bold bg-white/[0.08] backdrop-blur-xl text-cyan-300 border border-white/15 rounded-xl shadow-sm">
+            <span className="px-3 py-1 text-xs font-bold bg-[#EBF3FC] text-[#1769E0] border border-[#C8DEF7] rounded-full">
               {currentQ.topic}
             </span>
           )}
           <span
-            className={`px-3 py-1 text-xs font-extrabold uppercase tracking-wider border rounded-xl backdrop-blur-xl ${
-              difficultyColors[currentQ.difficulty] || 'bg-white/[0.06] text-slate-200 border-white/15'
+            className={`px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border rounded-full ${
+              difficultyBadges[currentQ.difficulty] ||
+              'bg-[#F7F8FA] text-[#5B667A] border-[#E5EAF0]'
             }`}
           >
             {currentQ.difficulty}
           </span>
         </div>
 
-        {/* Question Text */}
-        <h2 className="text-base sm:text-2xl font-black text-white leading-relaxed mb-6 relative z-10 tracking-tight">
+        {/* Question Text - Crystal Clear High Contrast Typography */}
+        <h2 className="text-lg sm:text-2xl lg:text-[25px] font-extrabold text-[#14213D] leading-relaxed mb-6 font-sans tracking-tight">
           {currentQ.question}
         </h2>
 
-        {/* Code Snippet (Glass container) */}
+        {/* Code Snippet Box */}
         {currentQ.codeSnippet && (
-          <div className="mb-6 rounded-2xl overflow-hidden border border-white/15 bg-black/60 backdrop-blur-2xl shadow-xl relative z-10">
-            <div className="flex items-center px-4 py-2.5 border-b border-white/[0.08] bg-white/[0.03] text-xs text-slate-300 font-mono">
-              <Code className="w-3.5 h-3.5 text-cyan-400 mr-1.5" />
-              Code Snippet
+          <div className="mb-6 rounded-2xl overflow-hidden border-2 border-[#1E3A66] bg-[#0C1B33] text-[#F8FAFC] shadow-xs">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-[#1E3A66] bg-[#071324] text-xs text-[#93C5FD] font-mono font-semibold">
+              <div className="flex items-center gap-2">
+                <Code className="w-3.5 h-3.5 text-[#60A5FA]" />
+                <span>Code Context</span>
+              </div>
+              <span className="text-[10px] text-[#64748B]">Terminal Snippet</span>
             </div>
-            <pre className="p-4 overflow-x-auto text-xs sm:text-sm font-mono text-cyan-200 leading-relaxed">
+            <pre className="p-4 sm:p-5 overflow-x-auto text-xs sm:text-sm font-mono text-[#F1F5F9] leading-relaxed tracking-wide">
               <code>{currentQ.codeSnippet}</code>
             </pre>
           </div>
         )}
 
-        {/* 4 Options Grid (Frosted Glass Interactive Cards) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5 pt-1 relative z-10">
+        {/* 4 Options Grid - Crystal Clear & Highly Legible */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 pt-1">
           {currentQ.options.map((option, idx) => {
             const isSelected = answers[currentQ.id] === idx;
             const optionLetter = String.fromCharCode(65 + idx);
@@ -325,22 +357,24 @@ export function QuizSession({
                 type="button"
                 onClick={() => handleSelectOption(idx)}
                 disabled={feedbackState === 'showing'}
-                className={`group p-3.5 sm:p-4.5 min-h-[52px] rounded-2xl border text-left font-medium text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-start gap-3 sm:gap-3.5 backdrop-blur-2xl ${
+                className={`min-h-[64px] p-4 sm:p-5 rounded-2xl border-2 text-left font-semibold transition-all duration-150 cursor-pointer flex items-center gap-4 shadow-2xs group ${
                   isSelected
-                    ? 'bg-gradient-to-r from-cyan-500/30 via-sky-500/25 to-indigo-500/25 border-cyan-400 text-white ring-2 ring-cyan-500/50 shadow-[0_0_28px_rgba(6,182,212,0.35)] scale-[1.015]'
-                    : 'glass-option text-slate-200 hover:text-white hover:border-cyan-400/50 hover:bg-white/[0.08]'
+                    ? 'bg-[#EBF3FC] border-[#1769E0] text-[#14213D] ring-2 ring-[#1769E0]/25 shadow-xs scale-[1.01]'
+                    : 'bg-white border-[#D6DFE9] text-[#14213D] hover:border-[#1769E0] hover:bg-[#F8FAFD] hover:shadow-xs'
                 } ${feedbackState === 'showing' ? 'cursor-default' : ''}`}
               >
                 <span
-                  className={`w-7 h-7 rounded-xl font-mono font-black text-xs flex items-center justify-center shrink-0 shadow-md transition-colors ${
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-mono font-bold text-sm sm:text-base flex items-center justify-center shrink-0 transition-colors ${
                     isSelected
-                      ? 'bg-cyan-400 text-slate-950 font-black shadow-cyan-500/50'
-                      : 'bg-white/[0.08] group-hover:bg-cyan-400/20 text-slate-200 group-hover:text-cyan-300 border border-white/15'
+                      ? 'bg-[#1769E0] text-white shadow-xs'
+                      : 'bg-[#F0F4F8] border border-[#D6DFE9] text-[#14213D] group-hover:border-[#1769E0] group-hover:bg-[#EBF3FC] group-hover:text-[#1769E0]'
                   }`}
                 >
                   {optionLetter}
                 </span>
-                <span className="flex-1 leading-snug font-medium pt-0.5">{option}</span>
+                <span className="flex-1 text-sm sm:text-[15px] font-semibold text-[#14213D] leading-normal">
+                  {option}
+                </span>
               </button>
             );
           })}
@@ -349,11 +383,27 @@ export function QuizSession({
 
       {/* Error Banner */}
       {errorMessage && (
-        <div className="mt-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+        <div className="mt-4 p-4 rounded-xl bg-[#FDF2F2] border border-[#FECDCA] text-[#D92D20] text-xs font-semibold flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-[#D92D20] shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
+
+      {/* Leave Quiz Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showExitModal}
+        variant="danger"
+        title="Leave Quiz Session?"
+        message="Are you sure you want to abandon this quiz test? All current answers and progress in this session will be lost."
+        confirmText="Leave Quiz"
+        cancelText="Resume Quiz"
+        onConfirm={() => {
+          stopQuizBgm();
+          setShowExitModal(false);
+          router.push(roomMode ? '/join-quiz' : '/courses');
+        }}
+        onCancel={() => setShowExitModal(false)}
+      />
     </div>
   );
 }

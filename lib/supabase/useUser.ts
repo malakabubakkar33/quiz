@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useUser as useClerkUser } from '@clerk/nextjs';
 
 export interface AppUser {
   id: string;
@@ -24,66 +25,68 @@ export interface AppUser {
 }
 
 export function useUser() {
-  const [user, setUser] = useState<AppUser | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const clerk = useClerkUser();
+  const [dbUserData, setDbUserData] = useState<Partial<AppUser> | null>(null);
 
-  const fetchUser = useCallback(async () => {
+  const fetchDbUser = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/me', { cache: 'no-store' });
       const data = await res.json().catch(() => ({ user: null }));
       if (data?.user) {
-        const u = data.user;
-        const normalizedUser: AppUser = {
-          id: u.userId,
-          userId: u.userId,
-          name: u.name,
-          email: u.email,
-          username: u.username,
-          avatar: u.avatar,
-          institutionType: u.institutionType,
-          institutionName: u.institutionName,
-          codingLevel: u.codingLevel,
-          user_metadata: {
-            full_name: u.name,
-            name: u.name,
-            username: u.username,
-            avatar_url: u.avatar,
-            institution_type: u.institutionType,
-            institution_name: u.institutionName,
-            coding_level: u.codingLevel,
-          },
-        };
-        setUser(normalizedUser);
+        setDbUserData(data.user);
       } else {
-        setUser(null);
+        setDbUserData(null);
       }
     } catch {
-      setUser(null);
-    } finally {
-      setIsLoaded(true);
+      setDbUserData(null);
     }
   }, []);
 
   useEffect(() => {
-    fetchUser();
+    if (clerk.isLoaded && clerk.isSignedIn) {
+      fetchDbUser();
+    } else if (clerk.isLoaded && !clerk.isSignedIn) {
+      setDbUserData(null);
+    }
+  }, [clerk.isLoaded, clerk.isSignedIn, fetchDbUser]);
 
-    const handleAuthChange = () => {
-      fetchUser();
+  let user: AppUser | null = null;
+
+  if (clerk.isLoaded && clerk.user) {
+    const cUser = clerk.user;
+    const email = cUser.primaryEmailAddress?.emailAddress || '';
+    const name = cUser.fullName || cUser.firstName || cUser.username || email.split('@')[0] || 'Developer';
+    const username = cUser.username || dbUserData?.username || email.split('@')[0];
+    const avatar = cUser.imageUrl || dbUserData?.avatar;
+
+    user = {
+      id: cUser.id,
+      userId: cUser.id,
+      name,
+      email,
+      username,
+      avatar,
+      institutionType: dbUserData?.institutionType,
+      institutionName: dbUserData?.institutionName,
+      codingLevel: dbUserData?.codingLevel,
+      user_metadata: {
+        full_name: name,
+        name,
+        username,
+        avatar_url: avatar,
+        institution_type: dbUserData?.institutionType,
+        institution_name: dbUserData?.institutionName,
+        coding_level: dbUserData?.codingLevel,
+      },
     };
-
-    window.addEventListener('focus', handleAuthChange);
-    window.addEventListener('cq-auth-change', handleAuthChange);
-
-    return () => {
-      window.removeEventListener('focus', handleAuthChange);
-      window.removeEventListener('cq-auth-change', handleAuthChange);
-    };
-  }, [fetchUser]);
+  } else if (dbUserData?.userId) {
+    user = dbUserData as AppUser;
+  }
 
   return {
     user,
-    isLoaded,
-    isSignedIn: !isLoaded ? false : !!user,
-    refreshUser: fetchUser,
+    isLoaded: clerk.isLoaded,
+    isSignedIn: clerk.isLoaded ? !!clerk.isSignedIn : false,
+    refreshUser: fetchDbUser,
   };
 }

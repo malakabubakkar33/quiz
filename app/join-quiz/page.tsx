@@ -1,26 +1,32 @@
 import { RoomCodeInput } from '@/components/RoomCodeInput';
-import { BackButton } from '@/components/BackButton';
 import { Users } from 'lucide-react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Join Quiz | CodeQuiz',
+  title: 'Join Quiz Room | QuizCode',
+  description: 'Enter your 8-digit invite code to join a live multiplayer coding quiz room.',
 };
 
 export default function JoinQuizPage() {
   return (
-    <div className="w-full max-w-lg mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-14 space-y-6">
-      <BackButton fallbackUrl="/" label="Back to Home" />
-      <div className="text-center mb-6">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/20">
-          <Users className="w-7 h-7 text-white" />
+    <div className="w-full max-w-lg mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-16 space-y-6">
+      <div className="text-center mb-6 space-y-2">
+        <div className="w-14 h-14 rounded-2xl bg-[#EBF3FC] text-[#1769E0] border border-[#C8DEF7] flex items-center justify-center mx-auto mb-3 shadow-2xs">
+          <Users className="w-7 h-7" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">Join a Quiz</h1>
-        <p className="text-xs sm:text-sm text-slate-400">
-          Enter the 8-digit room code shared by your quiz host to join the quiz room.
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#14213D] font-serif-title tracking-tight">
+          Join a Quiz Room
+        </h1>
+
+        <p className="text-xs sm:text-sm text-[#5B667A] max-w-sm mx-auto">
+          Enter the 8-digit numeric room code shared by your quiz host to enter the live arena.
         </p>
       </div>
-      <RoomCodeInput size="lg" />
+
+      <div className="bg-white border-2 border-[#E5EAF0] rounded-2xl p-6 shadow-xs">
+        <RoomCodeInput size="lg" />
+      </div>
     </div>
   );
 }

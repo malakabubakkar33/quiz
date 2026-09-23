@@ -38,10 +38,10 @@ export function ProfileAnalyticsRings({ analytics }: Props) {
 
   // Tier designation
   const getTier = (rp: number) => {
-    if (rp >= 2200) return { name: 'Grandmaster', color: 'text-amber-400', border: 'border-amber-500/30' };
-    if (rp >= 1800) return { name: 'Diamond Master', color: 'text-cyan-400', border: 'border-cyan-500/30' };
-    if (rp >= 1400) return { name: 'Platinum Coder', color: 'text-indigo-400', border: 'border-indigo-500/30' };
-    return { name: 'Challenger', color: 'text-emerald-400', border: 'border-emerald-500/30' };
+    if (rp >= 2200) return { name: 'Grandmaster', color: 'text-[#B45309]', badgeColor: 'bg-[#FEF9E7] text-[#B45309] border-[#FDE68A]' };
+    if (rp >= 1800) return { name: 'Diamond Master', color: 'text-[#1769E0]', badgeColor: 'bg-[#EBF3FC] text-[#1769E0] border-[#C8DEF7]' };
+    if (rp >= 1400) return { name: 'Platinum Coder', color: 'text-[#7C3AED]', badgeColor: 'bg-[#F3E8FF] text-[#7C3AED] border-[#DDD6FE]' };
+    return { name: 'Challenger', color: 'text-[#0D9488]', badgeColor: 'bg-[#EEF7F2] text-[#0D9488] border-[#99F6E4]' };
   };
 
   const tier = getTier(ratingPoints);
@@ -49,45 +49,45 @@ export function ProfileAnalyticsRings({ analytics }: Props) {
   const rings = [
     {
       id: 'score',
-      title: 'Rating & Score',
+      title: 'Rating & MMR',
       value: `${ratingPoints.toLocaleString()} RP`,
-      subtext: `${totalScore.toLocaleString()} pts accumulated`,
+      subtext: `${totalScore.toLocaleString()} total pts accumulated`,
       percentage: ratingPercentage,
       gradientId: 'grad-score',
-      colorFrom: '#06b6d4', // cyan-500
-      colorTo: '#6366f1',   // indigo-500
-      textColor: 'text-cyan-400',
+      colorFrom: '#1769E0',
+      colorTo: '#2563EB',
+      textColor: 'text-[#1769E0]',
       icon: Trophy,
       badge: tier.name,
-      badgeColor: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20',
+      badgeColor: tier.badgeColor,
     },
     {
       id: 'accuracy',
       title: 'Average Accuracy',
       value: `${accuracy}%`,
-      subtext: accuracy >= 80 ? 'Mastery tier accuracy' : 'Active precision',
+      subtext: accuracy >= 80 ? 'Mastery tier accuracy' : 'Active precision rate',
       percentage: Math.max(5, accuracy),
       gradientId: 'grad-accuracy',
-      colorFrom: '#10b981', // emerald-500
-      colorTo: '#14b8a6',   // teal-500
-      textColor: 'text-emerald-400',
+      colorFrom: '#0F8A52',
+      colorTo: '#059669',
+      textColor: 'text-[#0F8A52]',
       icon: Target,
       badge: accuracy >= 85 ? 'Sharpshooter' : 'Calibrated',
-      badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+      badgeColor: 'bg-[#E8F8F0] text-[#0F8A52] border-[#C2F0D8]',
     },
     {
       id: 'speed',
-      title: 'Average Response Speed',
+      title: 'Response Speed',
       value: `${averageTimeSec}s`,
       subtext: `${averageTimeSec <= 20 ? 'Lightning fast' : averageTimeSec <= 40 ? 'Swift thinking' : 'Deliberate'} pace`,
       percentage: speedPercentage,
       gradientId: 'grad-speed',
-      colorFrom: '#f59e0b', // amber-500
-      colorTo: '#ef4444',   // red-500
-      textColor: 'text-amber-400',
+      colorFrom: '#D97706',
+      colorTo: '#DC2626',
+      textColor: 'text-[#D97706]',
       icon: Zap,
       badge: averageTimeSec <= 25 ? 'High Velocity' : 'Steady Pace',
-      badgeColor: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+      badgeColor: 'bg-[#FEF9E7] text-[#B45309] border-[#FDE68A]',
     },
     {
       id: 'rank',
@@ -96,31 +96,31 @@ export function ProfileAnalyticsRings({ analytics }: Props) {
       subtext: `Top ${Math.max(1, 100 - percentile)}% of ${totalPlayers} coders`,
       percentage: Math.max(10, percentile),
       gradientId: 'grad-rank',
-      colorFrom: '#a855f7', // purple-500
-      colorTo: '#ec4899',   // pink-500
-      textColor: 'text-purple-400',
+      colorFrom: '#7C3AED',
+      colorTo: '#9333EA',
+      textColor: 'text-[#7C3AED]',
       icon: Crown,
       badge: globalRank <= 10 ? 'Top 10 Global' : `Rank #${globalRank}`,
-      badgeColor: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
+      badgeColor: 'bg-[#F3E8FF] text-[#7C3AED] border-[#DDD6FE]',
     },
   ];
 
   // SVG Circular Constants
-  const size = 150;
-  const strokeWidth = 11;
+  const size = 140;
+  const strokeWidth = 10;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Award className="w-5 h-5 text-cyan-400" />
+        <h2 className="text-base font-bold text-[#14213D] flex items-center gap-2">
+          <Award className="w-4 h-4 text-[#1769E0]" />
           <span>Realtime Performance Analytics</span>
         </h2>
-        <span className="text-xs text-slate-400 flex items-center gap-1">
+        <span className="text-xs text-[#5B667A] flex items-center gap-1 font-medium">
           Live Backend Calculation
-          <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400" />
+          <ArrowUpRight className="w-3.5 h-3.5 text-[#1769E0]" />
         </span>
       </div>
 
@@ -134,33 +134,27 @@ export function ProfileAnalyticsRings({ analytics }: Props) {
           return (
             <div
               key={ring.id}
-              className="relative p-6 rounded-3xl bg-slate-900/80 border border-slate-800 backdrop-blur-xl shadow-xl hover:border-slate-700 transition-all flex flex-col items-center text-center group overflow-hidden"
+              className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white border-2 border-[#E5EAF0] shadow-xs hover:border-[#1769E0]/40 transition-all flex flex-col items-center text-center group"
             >
-              {/* Subtle top ambient glow */}
-              <div
-                className="absolute -top-12 left-1/2 -translate-x-1/2 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity"
-                style={{ backgroundColor: ring.colorFrom }}
-              />
-
               {/* Title & Badge */}
               <div className="flex items-center justify-between w-full mb-3">
-                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-                  <Icon className={`w-3.5 h-3.5 ${ring.textColor}`} />
-                  {ring.title}
+                <span className="text-xs font-bold text-[#5B667A] flex items-center gap-1.5 truncate">
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${ring.textColor}`} />
+                  <span className="truncate">{ring.title}</span>
                 </span>
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ring.badgeColor}`}
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${ring.badgeColor}`}
                 >
                   {ring.badge}
                 </span>
               </div>
 
               {/* Circular SVG Progress Ring */}
-              <div className="relative w-[150px] h-[150px] flex items-center justify-center my-2">
+              <div className="relative w-[140px] h-[140px] flex items-center justify-center my-2">
                 <svg
                   width={size}
                   height={size}
-                  className="transform -rotate-90 origin-center drop-shadow-md"
+                  className="transform -rotate-90 origin-center"
                 >
                   <defs>
                     <linearGradient
@@ -181,9 +175,8 @@ export function ProfileAnalyticsRings({ analytics }: Props) {
                     cy={size / 2}
                     r={radius}
                     fill="transparent"
-                    stroke="#1e293b" // slate-800
+                    stroke="#E5EAF0"
                     strokeWidth={strokeWidth}
-                    className="opacity-70"
                   />
 
                   {/* Animated Progress Circle */}
@@ -205,17 +198,17 @@ export function ProfileAnalyticsRings({ analytics }: Props) {
 
                 {/* Center Content Inside Circle */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xl font-black text-white tracking-tight">
+                  <span className="text-xl font-bold text-[#14213D] tracking-tight">
                     {ring.value}
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#5B667A] mt-0.5">
                     {ring.percentage}% efficiency
                   </span>
                 </div>
               </div>
 
               {/* Bottom Details */}
-              <p className="text-xs text-slate-400 mt-2 font-medium">
+              <p className="text-xs text-[#5B667A] mt-2 font-medium">
                 {ring.subtext}
               </p>
             </div>

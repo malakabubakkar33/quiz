@@ -26,6 +26,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import Link from 'next/link';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface Participant {
   rank: number;
@@ -71,7 +72,8 @@ export function CreatorDashboard({ initialState }: Props) {
 
   const [state, setState] = useState<RoomLiveState>(initialState);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'leaderboard' | 'participants' | 'activity'>('leaderboard');
+  const [activeTab, setActiveTab] = useState<'leaderboard' | 'activity'>('leaderboard');
+  const [showEndModal, setShowEndModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -234,8 +236,7 @@ export function CreatorDashboard({ initialState }: Props) {
     }
   }
 
-  async function handleEnd() {
-    if (!confirm('Are you sure you want to end this quiz tournament?')) return;
+  async function executeEndTournament() {
     setActionLoading(true);
     try {
       await endRoomQuiz(state.roomCode);
@@ -252,6 +253,7 @@ export function CreatorDashboard({ initialState }: Props) {
       alert(e instanceof Error ? e.message : 'Failed to end quiz');
     } finally {
       setActionLoading(false);
+      setShowEndModal(false);
     }
   }
 
@@ -490,7 +492,7 @@ export function CreatorDashboard({ initialState }: Props) {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={handleEnd}
+                  onClick={() => setShowEndModal(true)}
                   disabled={actionLoading}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer"
                 >
@@ -674,6 +676,19 @@ export function CreatorDashboard({ initialState }: Props) {
           </div>
         </div>
       )}
+
+      {/* End Tournament Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showEndModal}
+        variant="danger"
+        title="End Tournament Now?"
+        message="Are you sure you want to end this live tournament? Submissions will be closed, final ranks computed, and all players notified."
+        confirmText="Yes, End Tournament"
+        cancelText="Cancel"
+        isLoading={actionLoading}
+        onConfirm={executeEndTournament}
+        onCancel={() => setShowEndModal(false)}
+      />
     </div>
   );
 }

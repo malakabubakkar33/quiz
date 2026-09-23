@@ -15,6 +15,13 @@ async function getResolvedAuth() {
   };
 }
 
+function withTimeout<T>(promise: Promise<T>, ms = 2000, timeoutErrorMsg = 'Operation timed out'): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(timeoutErrorMsg)), ms)),
+  ]);
+}
+
 // ============================================================
 // TYPE EXPORTS
 // ============================================================
@@ -49,6 +56,7 @@ export interface QuizResultReview {
     isCorrect: boolean;
     explanation: string;
     topic: string | null;
+    codeSnippet?: string | null;
   }[];
 }
 
@@ -61,14 +69,17 @@ export async function getCourses() {
     // Non-blocking schema assurance
     ensureDatabaseSchema().catch(() => {});
 
-    const dbCourses = await prisma.course.findMany({
-      include: {
-        _count: {
-          select: { questions: true },
+    const dbCourses = await withTimeout(
+      prisma.course.findMany({
+        include: {
+          _count: {
+            select: { questions: true },
+          },
         },
-      },
-      orderBy: { name: 'asc' },
-    });
+        orderBy: { name: 'asc' },
+      }),
+      2000
+    );
 
     if (dbCourses && dbCourses.length > 0) {
       return dbCourses.map((c) => ({
@@ -106,14 +117,17 @@ export const getCategories = getCourses;
 
 export async function getCourseBySlug(slug: string) {
   try {
-    const course = await prisma.course.findUnique({
-      where: { slug },
-      include: {
-        _count: {
-          select: { questions: true },
+    const course = await withTimeout(
+      prisma.course.findUnique({
+        where: { slug },
+        include: {
+          _count: {
+            select: { questions: true },
+          },
         },
-      },
-    });
+      }),
+      2000
+    );
 
     if (course) {
       return {
@@ -173,10 +187,13 @@ export async function getSoloQuestions(
   }[] = [];
 
   try {
-    const dbCourse = await prisma.course.findUnique({
-      where: { slug: courseSlug },
-      include: { questions: true },
-    });
+    const dbCourse = await withTimeout(
+      prisma.course.findUnique({
+        where: { slug: courseSlug },
+        include: { questions: true },
+      }),
+      2000
+    );
 
     if (dbCourse && dbCourse.questions.length > 0) {
       courseName = dbCourse.name;
@@ -429,10 +446,59 @@ export async function getSoloResult(attemptId: string): Promise<QuizResultReview
 // ============================================================
 
 export async function getUserDashboardStats() {
-  const authUser = await getResolvedAuth();
-  const userId = authUser.userId;
+  try {
+    const authUser = await getResolvedAuth();
+    const userId = authUser.userId;
 
-  if (!userId) {
+    if (!userId) {
+      return {
+        totalCompleted: 0,
+        averageScore: 0,
+        bestScore: 0,
+        totalTimeSec: 0,
+        recentAttempts: [] as DashboardAttemptSummary[],
+      };
+    }
+
+    const attempts = await withTimeout(
+      prisma.soloQuizAttempt.findMany({
+        where: { clerkUserId: userId },
+        include: { course: true },
+        orderBy: { completedAt: 'desc' },
+      }),
+      2000
+    );
+
+    const totalCompleted = attempts.length;
+    const averageScore =
+      totalCompleted > 0
+        ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / totalCompleted)
+        : 0;
+    const bestScore =
+      totalCompleted > 0 ? Math.max(...attempts.map((a) => a.score)) : 0;
+    const totalTimeSec = attempts.reduce((sum, a) => sum + a.timeTakenSec, 0);
+
+    const recentAttempts = attempts.slice(0, 15).map((a) => ({
+      id: a.id,
+      quizName: a.quizName,
+      categoryName: a.course.name,
+      categorySlug: a.course.slug,
+      score: a.score,
+      totalQuestions: a.totalQuestions,
+      correctCount: a.correctCount,
+      timeTakenSec: a.timeTakenSec,
+      completedAt: a.completedAt.toLocaleDateString(),
+    }));
+
+    return {
+      totalCompleted,
+      averageScore,
+      bestScore,
+      totalTimeSec,
+      recentAttempts,
+    };
+  } catch (error) {
+    console.warn('Notice: Error or timeout in getUserDashboardStats, returning empty stats');
     return {
       totalCompleted: 0,
       averageScore: 0,
@@ -441,41 +507,6 @@ export async function getUserDashboardStats() {
       recentAttempts: [] as DashboardAttemptSummary[],
     };
   }
-
-  const attempts = await prisma.soloQuizAttempt.findMany({
-    where: { clerkUserId: userId },
-    include: { course: true },
-    orderBy: { completedAt: 'desc' },
-  });
-
-  const totalCompleted = attempts.length;
-  const averageScore =
-    totalCompleted > 0
-      ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / totalCompleted)
-      : 0;
-  const bestScore =
-    totalCompleted > 0 ? Math.max(...attempts.map((a) => a.score)) : 0;
-  const totalTimeSec = attempts.reduce((sum, a) => sum + a.timeTakenSec, 0);
-
-  const recentAttempts = attempts.slice(0, 15).map((a) => ({
-    id: a.id,
-    quizName: a.quizName,
-    categoryName: a.course.name,
-    categorySlug: a.course.slug,
-    score: a.score,
-    totalQuestions: a.totalQuestions,
-    correctCount: a.correctCount,
-    timeTakenSec: a.timeTakenSec,
-    completedAt: a.completedAt.toLocaleDateString(),
-  }));
-
-  return {
-    totalCompleted,
-    averageScore,
-    bestScore,
-    totalTimeSec,
-    recentAttempts,
-  };
 }
 
 // ============================================================
@@ -1165,11 +1196,14 @@ export async function getCourseSearchResults(query: string): Promise<{
 
 export async function getPlatformStats() {
   try {
-    const [userCount, attemptCount, duelCount] = await Promise.all([
-      prisma.user.count().catch(() => 10240),
-      prisma.soloQuizAttempt.count().catch(() => 85200),
-      prisma.friendChallenge.count().catch(() => 14800),
-    ]);
+    const [userCount, attemptCount, duelCount] = await withTimeout(
+      Promise.all([
+        prisma.user.count().catch(() => 10240),
+        prisma.soloQuizAttempt.count().catch(() => 85200),
+        prisma.friendChallenge.count().catch(() => 14800),
+      ]),
+      2000
+    );
 
     const totalQuizzes = (attemptCount + duelCount) || 100000;
     const activeUsers = userCount ? Math.max(userCount, 1000) : 10000;

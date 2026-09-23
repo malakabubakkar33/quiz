@@ -3,6 +3,13 @@
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from './auth';
 
+function withTimeout<T>(promise: Promise<T>, ms = 2500, errorMsg = 'Database operation timed out'): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(errorMsg)), ms)),
+  ]);
+}
+
 export interface LeaderboardUser {
   rank: number;
   id: string;
@@ -83,28 +90,31 @@ export async function getGlobalLeaderboard(): Promise<{
     const currentUserId = authUser?.userId || null;
 
     // Fetch all users with profile data
-    const users = await prisma.user.findMany({
-      where: {
-        username: { not: null },
-      },
-      select: {
-        id: true,
-        clerkUserId: true,
-        name: true,
-        username: true,
-        avatar: true,
-        codingLevel: true,
-        institutionName: true,
-        totalScore: true,
-        ratingPoints: true,
-        quizzesPlayed: true,
-        quizzesWon: true,
-        averageAccuracy: true,
-        averageTimeSec: true,
-        lastActiveAt: true,
-        createdAt: true,
-      },
-    });
+    const users = await withTimeout(
+      prisma.user.findMany({
+        where: {
+          username: { not: null },
+        },
+        select: {
+          id: true,
+          clerkUserId: true,
+          name: true,
+          username: true,
+          avatar: true,
+          codingLevel: true,
+          institutionName: true,
+          totalScore: true,
+          ratingPoints: true,
+          quizzesPlayed: true,
+          quizzesWon: true,
+          averageAccuracy: true,
+          averageTimeSec: true,
+          lastActiveAt: true,
+          createdAt: true,
+        },
+      }),
+      2500
+    );
 
     // Compute effective scores with decay
     const evaluatedUsers = users.map((u) => {
@@ -187,26 +197,32 @@ export async function getUserAnalytics(clerkUserId?: string): Promise<UserAnalyt
     const targetUserId = clerkUserId || authUser?.userId;
     if (!targetUserId) return null;
 
-    // Recalculate stats from all matches to ensure live precision
-    await recalculateUserStats(targetUserId);
+    // Recalculate stats with safe timeout
+    await withTimeout(recalculateUserStats(targetUserId), 2000).catch(() => {});
 
-    const user = await prisma.user.findFirst({
-      where: { clerkUserId: targetUserId },
-    });
+    const user = await withTimeout(
+      prisma.user.findFirst({
+        where: { clerkUserId: targetUserId },
+      }),
+      2000
+    );
 
     if (!user) return null;
 
     // Get all users to determine rank
-    const allUsers = await prisma.user.findMany({
-      select: {
-        clerkUserId: true,
-        ratingPoints: true,
-        totalScore: true,
-        quizzesWon: true,
-        lastActiveAt: true,
-        createdAt: true,
-      },
-    });
+    const allUsers = await withTimeout(
+      prisma.user.findMany({
+        select: {
+          clerkUserId: true,
+          ratingPoints: true,
+          totalScore: true,
+          quizzesWon: true,
+          lastActiveAt: true,
+          createdAt: true,
+        },
+      }),
+      2000
+    );
 
     const ranked = allUsers.map((u) => ({
       clerkUserId: u.clerkUserId,

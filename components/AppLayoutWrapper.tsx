@@ -24,7 +24,10 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
     const handleSidebarChange = (e: Event) => {
       const customEvent = e as CustomEvent<{ isCollapsed: boolean }>;
       if (customEvent.detail && typeof customEvent.detail.isCollapsed === 'boolean') {
-        setIsCollapsed(customEvent.detail.isCollapsed);
+        const nextVal = customEvent.detail.isCollapsed;
+        queueMicrotask(() => {
+          setIsCollapsed(nextVal);
+        });
       }
     };
 
