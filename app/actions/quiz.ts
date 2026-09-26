@@ -15,7 +15,7 @@ async function getResolvedAuth() {
   };
 }
 
-function withTimeout<T>(promise: Promise<T>, ms = 2000, timeoutErrorMsg = 'Operation timed out'): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, ms = 10000, timeoutErrorMsg = 'Operation timed out'): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) => setTimeout(() => reject(new Error(timeoutErrorMsg)), ms)),
@@ -78,7 +78,7 @@ export async function getCourses() {
         },
         orderBy: { name: 'asc' },
       }),
-      2000
+      10000
     );
 
     if (dbCourses && dbCourses.length > 0) {
@@ -126,7 +126,7 @@ export async function getCourseBySlug(slug: string) {
           },
         },
       }),
-      2000
+      10000
     );
 
     if (course) {
@@ -192,7 +192,7 @@ export async function getSoloQuestions(
         where: { slug: courseSlug },
         include: { questions: true },
       }),
-      2000
+      10000
     );
 
     if (dbCourse && dbCourse.questions.length > 0) {
@@ -466,7 +466,7 @@ export async function getUserDashboardStats() {
         include: { course: true },
         orderBy: { completedAt: 'desc' },
       }),
-      2000
+      10000
     );
 
     const totalCompleted = attempts.length;
@@ -1130,6 +1130,10 @@ export interface CourseSearchResultItem {
   name: string;
   slug: string;
   icon: string;
+  description?: string;
+  badge?: string;
+  color?: string;
+  category?: string;
   topicCount: number;
   questionCount: number;
 }
@@ -1140,16 +1144,44 @@ export interface TopicSearchResultItem {
   courseSlug: string;
 }
 
+export async function getSuggestedCourses(): Promise<CourseSearchResultItem[]> {
+  const courses = await getCourses();
+  return courses.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    icon: c.icon,
+    description: c.description,
+    badge: c.badge || 'Curriculum Track',
+    color: c.color || 'from-blue-600 to-indigo-600',
+    category: (c as { category?: string }).category || 'frontend',
+    topicCount: c.topics && Array.isArray(c.topics) ? c.topics.length : 15,
+    questionCount: c.questionCount || 50,
+  }));
+}
+
 export async function getCourseSearchResults(query: string): Promise<{
   courses: CourseSearchResultItem[];
   topics: TopicSearchResultItem[];
 }> {
   const q = query.trim().toLowerCase();
-  if (!q || q.length < 1) {
-    return { courses: [], topics: [] };
-  }
-
   const courses = await getCourses();
+
+  if (!q || q.length < 1) {
+    const suggested = courses.slice(0, 8).map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      icon: c.icon,
+      description: c.description,
+      badge: c.badge || 'Curriculum Track',
+      color: c.color || 'from-blue-600 to-indigo-600',
+      category: (c as { category?: string }).category || 'frontend',
+      topicCount: c.topics && Array.isArray(c.topics) ? c.topics.length : 15,
+      questionCount: c.questionCount || 50,
+    }));
+    return { courses: suggested, topics: [] };
+  }
 
   // 1. Matching courses
   const matchingCourses: CourseSearchResultItem[] = courses
@@ -1157,13 +1189,18 @@ export async function getCourseSearchResults(query: string): Promise<{
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.slug.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q)
+        c.description.toLowerCase().includes(q) ||
+        (c.badge && c.badge.toLowerCase().includes(q))
     )
     .map((c) => ({
       id: c.id,
       name: c.name,
       slug: c.slug,
       icon: c.icon,
+      description: c.description,
+      badge: c.badge || 'Curriculum Track',
+      color: c.color || 'from-blue-600 to-indigo-600',
+      category: (c as { category?: string }).category || 'frontend',
       topicCount: c.topics && Array.isArray(c.topics) ? c.topics.length : 15,
       questionCount: c.questionCount || 50,
     }));
@@ -1185,8 +1222,8 @@ export async function getCourseSearchResults(query: string): Promise<{
   }
 
   return {
-    courses: matchingCourses.slice(0, 6),
-    topics: matchingTopics.slice(0, 8),
+    courses: matchingCourses.slice(0, 8),
+    topics: matchingTopics.slice(0, 10),
   };
 }
 
@@ -1202,7 +1239,7 @@ export async function getPlatformStats() {
         prisma.soloQuizAttempt.count().catch(() => 85200),
         prisma.friendChallenge.count().catch(() => 14800),
       ]),
-      2000
+      10000
     );
 
     const totalQuizzes = (attemptCount + duelCount) || 100000;

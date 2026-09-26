@@ -16,33 +16,30 @@ export default function GlobalAppError({
   }, [error]);
 
   return (
-    <div className="w-full min-h-[70vh] flex flex-col items-center justify-center px-4 py-16 text-center relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-
-      <div className="max-w-md mx-auto space-y-6 animate-fade-in">
+    <div className="w-full min-h-[70vh] flex flex-col items-center justify-center px-4 py-16 text-center select-none bg-[#F7F8FA]">
+      <div className="max-w-md mx-auto space-y-6 animate-fade-in bg-white border-2 border-[#E5EAF0] p-8 rounded-3xl shadow-xs">
         {/* Error icon badge */}
-        <div className="w-16 h-16 rounded-3xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-xl shadow-rose-500/10">
+        <div className="w-16 h-16 rounded-2xl bg-[#FDF2F2] border border-[#FECDCA] text-[#D92D20] flex items-center justify-center mx-auto shadow-xs">
           <AlertCircle className="w-8 h-8" />
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#14213D] font-serif-title tracking-tight">
             Something Went Wrong
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#5B667A] leading-relaxed">
             An unexpected glitch occurred while rendering this view. Your session and quiz answers remain intact.
           </p>
         </div>
 
-        {/* Error Details (Collapsible) */}
+        {/* Error Details */}
         {error?.message && (
-          <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-left">
-            <div className="text-[11px] font-mono text-rose-400 break-words line-clamp-3">
+          <div className="p-3.5 rounded-xl bg-[#F7F8FA] border border-[#E5EAF0] text-left">
+            <div className="text-[11px] font-mono text-[#D92D20] break-words line-clamp-3">
               {error.message}
             </div>
             {error.digest && (
-              <div className="text-[10px] font-mono text-slate-500 mt-1">
+              <div className="text-[10px] font-mono text-[#5B667A] mt-1">
                 Digest: {error.digest}
               </div>
             )}
@@ -54,7 +51,7 @@ export default function GlobalAppError({
           <button
             type="button"
             onClick={() => reset()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 to-sky-400 hover:from-cyan-300 hover:to-sky-300 transition-all shadow-md shadow-cyan-500/20 cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#1769E0] hover:bg-[#1257BD] transition-all shadow-md shadow-[#1769E0]/20 cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Try Again</span>
@@ -62,7 +59,7 @@ export default function GlobalAppError({
 
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#5B667A] hover:text-[#14213D] bg-[#F7F8FA] hover:bg-[#E5EAF0] border border-[#E5EAF0] transition-all"
           >
             <Home className="w-4 h-4" />
             <span>Go to Home</span>

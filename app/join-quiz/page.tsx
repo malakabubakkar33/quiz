@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Join Quiz Room | QuizCode',
-  description: 'Enter your 8-digit invite code to join a live multiplayer coding quiz room.',
+  description: 'Enter your 6-digit invite code or scan the QR code to join a live multiplayer coding quiz room.',
 };
 
 export default function JoinQuizPage() {
@@ -20,7 +20,7 @@ export default function JoinQuizPage() {
         </h1>
 
         <p className="text-xs sm:text-sm text-[#5B667A] max-w-sm mx-auto">
-          Enter the 8-digit numeric room code shared by your quiz host to enter the live arena.
+          Enter the 6-digit numeric room code or scan the host&apos;s QR code to enter the live arena.
         </p>
       </div>
 

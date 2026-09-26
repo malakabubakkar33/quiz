@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Eye,
   Gamepad2,
+  GraduationCap,
 } from 'lucide-react';
 
 interface EditAvatarStudioProps {
@@ -32,56 +33,48 @@ const PRESET_AVATARS = [
     name: 'Cyberpunk Dev',
     role: 'Full-Stack Prodigy',
     path: '/avatars/presets/preset-1.svg',
-    gradient: 'from-cyan-500 to-blue-600',
   },
   {
     id: 'preset-2',
     name: 'Neon Robot',
     role: 'Algorithm Automator',
     path: '/avatars/presets/preset-2.svg',
-    gradient: 'from-purple-500 to-pink-600',
   },
   {
     id: 'preset-3',
     name: 'Code Ninja',
     role: 'Bug Hunter',
     path: '/avatars/presets/preset-3.svg',
-    gradient: 'from-emerald-500 to-teal-600',
   },
   {
     id: 'preset-4',
     name: 'Frontend Wizard',
     role: 'CSS & UI Sorcerer',
     path: '/avatars/presets/preset-4.svg',
-    gradient: 'from-amber-500 to-orange-600',
   },
   {
     id: 'preset-5',
     name: 'Pixel Coder',
     role: 'Retro Architect',
     path: '/avatars/presets/preset-5.svg',
-    gradient: 'from-sky-400 to-indigo-600',
   },
   {
     id: 'preset-6',
     name: 'Quantum Arch',
     role: 'System Optimizer',
     path: '/avatars/presets/preset-6.svg',
-    gradient: 'from-rose-500 to-amber-500',
   },
   {
     id: 'preset-7',
     name: 'Terminal Ace',
     role: 'DevOps & Shell Master',
     path: '/avatars/presets/preset-7.svg',
-    gradient: 'from-teal-400 to-emerald-600',
   },
   {
     id: 'preset-8',
     name: 'AI Synthesizer',
     role: 'Neural Network Dev',
     path: '/avatars/presets/preset-8.svg',
-    gradient: 'from-violet-500 to-purple-600',
   },
 ];
 
@@ -148,18 +141,33 @@ export function EditAvatarStudio({
   };
 
   const handlePresetSelect = (presetPath: string) => {
+    setErrorMsg(null);
     setSelectedPreset(presetPath);
     setSelectedFile(null);
     setIsRemoving(false);
     setPreviewUrl(presetPath);
   };
 
-  const handleUrlApply = () => {
-    if (!customUrlInput.trim()) return;
-    setSelectedFile(null);
-    setSelectedPreset(null);
-    setIsRemoving(false);
-    setPreviewUrl(customUrlInput.trim());
+  const handleApplyUrl = () => {
+    setErrorMsg(null);
+    if (!customUrlInput.trim()) {
+      setErrorMsg('Please paste a direct image URL.');
+      return;
+    }
+
+    try {
+      const url = new URL(customUrlInput.trim());
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        setErrorMsg('Please enter a valid HTTP/HTTPS URL.');
+        return;
+      }
+      setSelectedFile(null);
+      setSelectedPreset(null);
+      setIsRemoving(false);
+      setPreviewUrl(customUrlInput.trim());
+    } catch {
+      setErrorMsg('Invalid URL format.');
+    }
   };
 
   const handleResetAvatar = () => {
@@ -168,128 +176,147 @@ export function EditAvatarStudio({
     setCustomUrlInput('');
     setPreviewUrl(null);
     setIsRemoving(true);
+    setErrorMsg(null);
   };
 
   const handleSave = async () => {
-    setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
+    setLoading(true);
 
     try {
-      const formData = new FormData();
+      let finalAvatarUrl = previewUrl;
 
-      if (nameInput.trim() && nameInput.trim() !== initialName) {
-        formData.append('name', nameInput.trim());
-      }
-
-      if (isRemoving) {
-        formData.append('remove', 'true');
-      } else if (selectedFile) {
+      // If user uploaded a new local file, upload via formData
+      if (selectedFile) {
+        const formData = new FormData();
         formData.append('file', selectedFile);
-      } else if (selectedPreset) {
-        formData.append('preset', selectedPreset);
-      } else if (previewUrl && previewUrl !== initialAvatar) {
-        formData.append('imageUrl', previewUrl);
+
+        const uploadRes = await fetch('/api/user/avatar/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || uploadData.error) {
+          throw new Error(uploadData.error || 'Failed to upload photo.');
+        }
+
+        finalAvatarUrl = uploadData.avatarUrl;
       }
 
-      const res = await fetch('/api/user/avatar', {
-        method: 'POST',
-        body: formData,
+      // If user explicitly chose to reset
+      if (isRemoving) {
+        finalAvatarUrl = null;
+      }
+
+      // Update User Profile in DB
+      const updateRes = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          avatar: finalAvatarUrl,
+          name: nameInput.trim() || undefined,
+        }),
       });
 
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Failed to update avatar');
+      const updateData = await updateRes.json();
+      if (!updateRes.ok || updateData.error) {
+        throw new Error(updateData.error || 'Failed to update profile.');
       }
 
-      setSuccessMsg('Avatar and profile updated successfully! Redirecting...');
+      setSuccessMsg('Profile and avatar successfully updated!');
+
+      // Dispatch global change events
+      window.dispatchEvent(new Event('cq-auth-change'));
+
       setTimeout(() => {
         router.push('/profile');
         router.refresh();
       }, 700);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error updating avatar');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Error saving avatar.');
       setLoading(false);
     }
   };
 
-  const initial = (nameInput || initialName || userEmail || 'U')[0]?.toUpperCase() || 'U';
   const displayName = nameInput.trim() || initialName || 'Developer';
+  const initial = displayName[0]?.toUpperCase() || 'D';
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8 animate-fade-in">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 animate-fade-in text-[#14213D]">
       {/* Top Breadcrumb / Back Link */}
       <div className="flex items-center justify-between">
         <Link
           href="/profile"
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer group"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-[#5B667A] hover:text-[#14213D] bg-white border border-[#E5EAF0] hover:border-[#CBD5E1] transition-all cursor-pointer shadow-2xs"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           <span>Back to Profile</span>
         </Link>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
+        <div className="flex items-center gap-2 text-xs text-[#5B667A]">
           <span>Profile</span>
           <span>/</span>
-          <span className="text-cyan-400 font-bold">Avatar Studio</span>
+          <span className="text-[#1769E0] font-bold">Avatar Studio</span>
         </div>
       </div>
 
       {/* Main Studio Title Card */}
-      <div className="rounded-3xl bg-slate-900/80 border border-slate-800 p-6 sm:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
+      <div className="rounded-3xl bg-white border-2 border-[#E5EAF0] p-6 sm:p-8 shadow-xs relative overflow-hidden">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold text-[#1769E0] bg-[#EBF3FC] border border-[#C8DEF7]">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Developer Customization Studio</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-            Customize Your Avatar & Identity
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#14213D] font-serif-title tracking-tight">
+            Customize Your Avatar &amp; Identity
           </h1>
-          <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">
-            Upload your custom photo, choose from high-tech developer personas, or link a public image. Your avatar updates across all live multiplayer rooms, lobbies, and leaderboards.
+          <p className="text-xs sm:text-sm text-[#5B667A] max-w-2xl leading-relaxed">
+            Upload your custom photo, choose from developer personas, or link a public image. Your avatar updates across all live multiplayer rooms, lobbies, and campus leaderboards.
           </p>
         </div>
       </div>
 
       {/* 2-Column Responsive Studio Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Real-Time Preview & Room Mockup (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Main Avatar Card */}
-          <div className="rounded-3xl bg-slate-900/90 border border-slate-800 p-6 sm:p-7 backdrop-blur-xl shadow-xl text-center space-y-5 relative overflow-hidden">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Eye className="w-3.5 h-3.5 text-cyan-400" />
-                Live Preview
+          <div className="rounded-3xl bg-white border-2 border-[#E5EAF0] p-6 sm:p-7 shadow-xs text-center space-y-5 relative overflow-hidden">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5EAF0]">
+              <span className="text-xs font-bold text-[#5B667A] uppercase tracking-wider flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5 text-[#1769E0]" />
+                <span>Live Preview</span>
               </span>
-              <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Real-Time
+              <span className="text-[11px] font-semibold text-[#0F8A52] flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#0F8A52] animate-pulse" />
+                <span>Real-Time</span>
               </span>
             </div>
 
-            {/* Giant Circular Avatar with Ambient Aura */}
+            {/* Giant Circular Avatar */}
             <div className="relative mx-auto w-36 h-36 sm:w-40 sm:h-40 my-2">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-500 via-sky-400 to-indigo-600 blur-xl opacity-40 animate-pulse pointer-events-none" />
-              <div className="relative w-full h-full rounded-3xl bg-gradient-to-tr from-cyan-500 via-sky-400 to-indigo-600 p-1.5 shadow-2xl overflow-hidden">
+              <div className="relative w-full h-full rounded-3xl bg-[#EBF3FC] border-2 border-[#C8DEF7] p-1 shadow-md overflow-hidden flex items-center justify-center">
                 {previewUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={previewUrl}
                     alt="Avatar Preview"
-                    className="w-full h-full object-cover rounded-2xl bg-slate-950"
+                    className="w-full h-full object-cover rounded-2xl bg-white"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center font-black text-5xl text-white bg-slate-950 rounded-2xl">
+                  <div className="w-full h-full flex items-center justify-center font-bold text-5xl text-[#1769E0] bg-[#EBF3FC] rounded-2xl">
                     {initial}
                   </div>
                 )}
               </div>
 
               {previewUrl && (
-                <div className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-emerald-500 text-slate-950 border-2 border-slate-900 shadow-lg" title="Active Selection">
+                <div
+                  className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-[#0F8A52] text-white border-2 border-white shadow-md"
+                  title="Active Selection"
+                >
                   <Check className="w-4 h-4 stroke-[3]" />
                 </div>
               )}
@@ -297,23 +324,23 @@ export function EditAvatarStudio({
 
             {/* Identity Text */}
             <div className="space-y-1">
-              <h3 className="text-lg sm:text-xl font-black text-white truncate">
+              <h3 className="text-lg sm:text-xl font-bold text-[#14213D] truncate">
                 {displayName}
               </h3>
-              <p className="text-xs text-slate-400 flex items-center justify-center gap-1.5 truncate">
-                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="truncate">{userEmail || 'student@codequiz.dev'}</span>
+              <p className="text-xs text-[#5B667A] flex items-center justify-center gap-1.5 truncate">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#1769E0] shrink-0" />
+                <span className="truncate">{userEmail || 'student@quizcode.dev'}</span>
               </p>
             </div>
 
             {/* Live Multiplayer Lobby Mockup Preview */}
-            <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-left space-y-2">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Gamepad2 className="w-3.5 h-3.5 text-indigo-400" />
-                Multiplayer Room Appearance
+            <div className="p-4 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] text-left space-y-2">
+              <div className="text-[11px] font-bold text-[#5B667A] uppercase tracking-wider flex items-center gap-1.5">
+                <Gamepad2 className="w-3.5 h-3.5 text-[#1769E0]" />
+                <span>Multiplayer Room Appearance</span>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-3">
-                <div className="relative w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 p-0.5 shrink-0 overflow-hidden">
+              <div className="p-2.5 rounded-xl bg-white border border-[#E5EAF0] flex items-center gap-3 shadow-2xs">
+                <div className="relative w-8 h-8 rounded-lg bg-[#EBF3FC] border border-[#C8DEF7] shrink-0 overflow-hidden flex items-center justify-center">
                   {previewUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
@@ -322,19 +349,19 @@ export function EditAvatarStudio({
                       className="w-full h-full object-cover rounded-[6px]"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center font-black text-xs text-white bg-slate-950 rounded-[6px]">
+                    <div className="w-full h-full flex items-center justify-center font-bold text-xs text-[#1769E0]">
                       {initial}
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-white truncate">{displayName}</div>
-                  <div className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    Ready in Arena
+                  <div className="text-xs font-bold text-[#14213D] truncate">{displayName}</div>
+                  <div className="text-[10px] text-[#0F8A52] font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0F8A52]" />
+                    <span>Ready in Arena</span>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                <span className="text-[10px] font-bold text-[#1769E0] bg-[#EBF3FC] px-2 py-0.5 rounded-md border border-[#C8DEF7]">
                   Player
                 </span>
               </div>
@@ -346,10 +373,10 @@ export function EditAvatarStudio({
                 type="button"
                 onClick={handleResetAvatar}
                 disabled={loading}
-                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/15 border border-rose-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-[#D92D20] hover:text-[#B42318] bg-[#FDF2F2] hover:bg-[#FEE4E2] border border-[#FECDCA] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Reset to Default Gradient Initials</span>
+                <span>Reset to Default Initials</span>
               </button>
             )}
           </div>
@@ -357,12 +384,12 @@ export function EditAvatarStudio({
 
         {/* Right Column: Editor Controls & Tabs (7 Cols) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="rounded-3xl bg-slate-900/90 border border-slate-800 p-6 sm:p-7 backdrop-blur-xl shadow-xl space-y-6">
+          <div className="rounded-3xl bg-white border-2 border-[#E5EAF0] p-6 sm:p-7 shadow-xs space-y-6">
             {/* Display Name Input Section */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+              <label className="text-xs font-bold text-[#14213D] uppercase tracking-wider flex items-center justify-between">
                 <span>Display Name</span>
-                <span className="text-[11px] text-slate-500 font-normal">Visible in leaderboards</span>
+                <span className="text-[11px] text-[#5B667A] font-normal">Visible in leaderboards</span>
               </label>
               <div className="relative">
                 <input
@@ -371,25 +398,25 @@ export function EditAvatarStudio({
                   onChange={(e) => setNameInput(e.target.value)}
                   placeholder="Enter your name"
                   maxLength={40}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 text-sm font-semibold text-white focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#F7F8FA] border border-[#E5EAF0] text-sm font-semibold text-[#14213D] focus:outline-none focus:border-[#1769E0] focus:ring-2 focus:ring-[#1769E0]/15 transition-all shadow-2xs"
                 />
-                <Edit3 className="w-4 h-4 text-slate-500 absolute right-4 top-3.5 pointer-events-none" />
+                <Edit3 className="w-4 h-4 text-[#94A3B8] absolute right-4 top-3.5 pointer-events-none" />
               </div>
             </div>
 
             {/* Tab Selection */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+              <label className="text-xs font-bold text-[#14213D] uppercase tracking-wider block">
                 Choose Avatar Source
               </label>
-              <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs sm:text-sm font-bold">
+              <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] text-xs sm:text-sm font-bold shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setActiveTab('upload')}
-                  className={`py-3 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     activeTab === 'upload'
-                      ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      ? 'bg-white text-[#1769E0] shadow-xs border border-[#E5EAF0]'
+                      : 'text-[#5B667A] hover:text-[#14213D]'
                   }`}
                 >
                   <Upload className="w-4 h-4" />
@@ -399,10 +426,10 @@ export function EditAvatarStudio({
                 <button
                   type="button"
                   onClick={() => setActiveTab('presets')}
-                  className={`py-3 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     activeTab === 'presets'
-                      ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      ? 'bg-white text-[#1769E0] shadow-xs border border-[#E5EAF0]'
+                      : 'text-[#5B667A] hover:text-[#14213D]'
                   }`}
                 >
                   <Sparkles className="w-4 h-4" />
@@ -412,10 +439,10 @@ export function EditAvatarStudio({
                 <button
                   type="button"
                   onClick={() => setActiveTab('url')}
-                  className={`py-3 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     activeTab === 'url'
-                      ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      ? 'bg-white text-[#1769E0] shadow-xs border border-[#E5EAF0]'
+                      : 'text-[#5B667A] hover:text-[#14213D]'
                   }`}
                 >
                   <LinkIcon className="w-4 h-4" />
@@ -442,34 +469,34 @@ export function EditAvatarStudio({
                   onDrop={handleDrop}
                   className={`border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all ${
                     isDragging
-                      ? 'border-cyan-400 bg-cyan-500/10 scale-[0.99]'
-                      : 'border-slate-700 hover:border-cyan-400/80 bg-slate-950/60 hover:bg-slate-950'
-                  } group`}
+                      ? 'border-[#1769E0] bg-[#EBF3FC] scale-[0.99]'
+                      : 'border-[#CBD5E1] hover:border-[#1769E0] bg-[#F7F8FA] hover:bg-white'
+                  } group shadow-2xs`}
                 >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-xl shadow-cyan-500/15">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#EBF3FC] border border-[#C8DEF7] text-[#1769E0] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform shadow-xs">
                     <Upload className="w-8 h-8 sm:w-10 sm:h-10" />
                   </div>
 
                   {selectedFile ? (
                     <div className="space-y-2">
-                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold text-sm">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EBF3FC] border border-[#C8DEF7] text-[#1769E0] font-bold text-sm">
                         <FileImage className="w-4 h-4" />
                         <span className="truncate max-w-xs">{selectedFile.name}</span>
                       </div>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-[#5B667A]">
                         Size: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to save
                       </p>
-                      <p className="text-xs text-cyan-400 font-semibold hover:underline">
+                      <p className="text-xs text-[#1769E0] font-semibold hover:underline">
                         Click or drag another file to replace
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="text-base sm:text-lg font-bold text-white">
+                      <div className="text-base sm:text-lg font-bold text-[#14213D]">
                         Drag and drop your image here, or{' '}
-                        <span className="text-cyan-400 underline underline-offset-4">browse files</span>
+                        <span className="text-[#1769E0] underline underline-offset-4">browse files</span>
                       </div>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-[#5B667A]">
                         Supported formats: PNG, JPG, WEBP, GIF, SVG (Max file size: 5MB)
                       </p>
                     </div>
@@ -481,9 +508,9 @@ export function EditAvatarStudio({
             {/* TAB 2: 8 Developer Presets */}
             {activeTab === 'presets' && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                <div className="flex items-center justify-between text-xs text-[#5B667A] font-medium">
                   <span>Click any persona to select:</span>
-                  <span className="text-cyan-400 font-bold">8 Handcrafted Avatars</span>
+                  <span className="text-[#1769E0] font-bold">8 Handcrafted Avatars</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -494,13 +521,13 @@ export function EditAvatarStudio({
                         key={preset.id}
                         type="button"
                         onClick={() => handlePresetSelect(preset.path)}
-                        className={`group relative p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center gap-2 text-center ${
+                        className={`group relative p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center gap-2 text-center shadow-2xs ${
                           isSelected
-                            ? 'bg-cyan-500/15 border-cyan-400 ring-2 ring-cyan-500/40 shadow-xl shadow-cyan-500/15 scale-[1.03]'
-                            : 'bg-slate-950/60 border-slate-800 hover:border-slate-600 hover:bg-slate-950'
+                            ? 'bg-[#EBF3FC] border-2 border-[#1769E0] ring-2 ring-[#1769E0]/15'
+                            : 'bg-[#F7F8FA] border-[#E5EAF0] hover:border-[#CBD5E1] hover:bg-white'
                         }`}
                       >
-                        <div className="w-16 h-16 rounded-2xl p-1 bg-slate-900 border border-slate-800 flex items-center justify-center group-hover:scale-105 transition-transform shadow-md">
+                        <div className="w-16 h-16 rounded-2xl p-1 bg-white border border-[#E5EAF0] flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={preset.path}
@@ -510,17 +537,17 @@ export function EditAvatarStudio({
                         </div>
 
                         <div className="space-y-0.5 w-full">
-                          <div className="text-xs font-bold text-white truncate">
+                          <div className="text-xs font-bold text-[#14213D] truncate">
                             {preset.name}
                           </div>
-                          <div className="text-[10px] text-slate-400 truncate">
+                          <div className="text-[10px] text-[#5B667A] truncate">
                             {preset.role}
                           </div>
                         </div>
 
                         {isSelected && (
-                          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center shadow-md">
-                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#1769E0] text-white flex items-center justify-center shadow-xs">
+                            <Check className="w-3 h-3 stroke-[3]" />
                           </div>
                         )}
                       </button>
@@ -532,51 +559,53 @@ export function EditAvatarStudio({
 
             {/* TAB 3: Direct URL */}
             {activeTab === 'url' && (
-              <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
-                <label className="text-xs font-bold text-slate-300 block">
-                  Public Direct Image URL
-                </label>
-                <div className="flex flex-col sm:flex-row gap-2.5">
-                  <input
-                    type="url"
-                    value={customUrlInput}
-                    onChange={(e) => setCustomUrlInput(e.target.value)}
-                    placeholder="https://github.com/identicons/username.png"
-                    className="flex-1 px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleUrlApply}
-                    className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-xs sm:text-sm font-bold text-white border border-slate-700 transition-colors cursor-pointer shrink-0"
-                  >
-                    Preview URL
-                  </button>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[#14213D] uppercase tracking-wider block">
+                    Public Image Link
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={customUrlInput}
+                      onChange={(e) => setCustomUrlInput(e.target.value)}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-[#F7F8FA] border border-[#E5EAF0] text-sm text-[#14213D] placeholder-[#94A3B8] focus:outline-none focus:border-[#1769E0] focus:ring-2 focus:ring-[#1769E0]/15 shadow-2xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyUrl}
+                      className="px-5 py-2.5 rounded-xl bg-[#1769E0] hover:bg-[#1257BD] text-white font-bold text-xs transition-colors cursor-pointer shadow-md shadow-[#1769E0]/20"
+                    >
+                      Preview
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[#5B667A]">
+                    Paste any public image link (GitHub avatar, Gravatar, Unsplash, etc.)
+                  </p>
                 </div>
-                <p className="text-xs text-slate-400">
-                  You can paste any direct web image link (GitHub avatar, Discord, Gravatar, Unsplash, etc.).
-                </p>
               </div>
             )}
 
-            {/* Feedback Notifications */}
+            {/* Notifications */}
             {errorMsg && (
-              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-sm font-medium animate-fade-in flex items-center gap-2.5">
-                <span className="w-2 h-2 rounded-full bg-rose-400" />
-                <span>{errorMsg}</span>
+              <div className="p-3.5 rounded-xl bg-[#FDF2F2] border border-[#FECDCA] text-[#D92D20] text-xs font-semibold">
+                {errorMsg}
               </div>
             )}
+
             {successMsg && (
-              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm font-semibold flex items-center gap-2.5 animate-fade-in">
-                <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-[#ECFDF3] border border-[#A6F4C5] text-[#027A48] text-xs font-bold flex items-center gap-2">
+                <Check className="w-4 h-4 text-[#027A48]" />
                 <span>{successMsg}</span>
               </div>
             )}
 
-            {/* Bottom Action Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-6 border-t border-slate-800">
+            {/* Save Actions Bar */}
+            <div className="pt-4 border-t border-[#E5EAF0] flex flex-col sm:flex-row items-center gap-3 justify-end">
               <Link
                 href="/profile"
-                className="w-full sm:w-auto px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl text-xs font-semibold text-[#5B667A] hover:text-[#14213D] hover:bg-[#F7F8FA] transition-colors text-center border border-[#E5EAF0]"
               >
                 Cancel
               </Link>
@@ -585,16 +614,16 @@ export function EditAvatarStudio({
                 type="button"
                 onClick={handleSave}
                 disabled={loading}
-                className="w-full sm:w-auto px-8 py-3 rounded-xl text-sm font-bold text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400 hover:from-cyan-300 hover:to-sky-300 transition-all shadow-xl shadow-cyan-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-[#1769E0] hover:bg-[#1257BD] transition-all shadow-md shadow-[#1769E0]/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Saving Changes...</span>
+                    <span>Saving Avatar...</span>
                   </>
                 ) : (
                   <>
-                    <span>Save & Apply Avatar</span>
+                    <span>Save Avatar to Profile</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

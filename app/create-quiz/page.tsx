@@ -24,7 +24,7 @@ export default async function CreateQuizPage() {
         </h1>
 
         <p className="text-xs sm:text-sm text-[#5B667A] mt-1 max-w-xl leading-relaxed">
-          Choose a technology course for your room. You will configure time limits, question counts, and receive an 8-digit invite code for your peers.
+          Choose a technology course for your room. You will configure time limits, question counts, and receive a 6-digit invite code and QR code for your peers to join instantly.
         </p>
       </div>
 

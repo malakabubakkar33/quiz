@@ -19,6 +19,9 @@ import {
   Radio,
   Share2,
   Zap,
+  QrCode,
+  GraduationCap,
+  Maximize2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -56,10 +59,20 @@ export function WaitingRoom({ initialState }: Props) {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [newPlayerToast, setNewPlayerToast] = useState<string | null>(null);
+  const [showQrModal, setShowQrModal] = useState(false);
   const hasRedirectedRef = useRef(false);
   const isCountingDownRef = useRef(false);
 
   const isHost = user && user.id === state.creatorClerkId;
+
+  const joinUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/room/${state.roomCode}`
+      : `https://joinquiz.vercel.app/room/${state.roomCode}`;
+
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
+    joinUrl
+  )}&margin=8&color=14-33-61&bgcolor=ffffff`;
 
   // Supabase Realtime Channel (0ms live updates)
   useEffect(() => {
@@ -151,7 +164,7 @@ export function WaitingRoom({ initialState }: Props) {
           setStartingNotice(true);
           setTimeout(() => {
             router.push(`/room/${state.roomCode}/quiz`);
-          }, 1000);
+          }, 600);
         }
       } catch {}
     }
@@ -163,7 +176,7 @@ export function WaitingRoom({ initialState }: Props) {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [state.roomCode, router, supabase]);
+  }, [state.roomCode, supabase, router]);
 
   function copyRoomCode() {
     navigator.clipboard.writeText(state.roomCode);
@@ -172,13 +185,12 @@ export function WaitingRoom({ initialState }: Props) {
   }
 
   function copyJoinLink() {
-    const url = `${window.location.origin}/room/${state.roomCode}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(joinUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
-  // Filter participants for high concurrency (1000+ players)
+  // Filter participants for high concurrency
   const filteredParticipants = useMemo(() => {
     if (!searchQuery.trim()) return state.participants;
     const q = searchQuery.toLowerCase().trim();
@@ -190,22 +202,19 @@ export function WaitingRoom({ initialState }: Props) {
   }, [state.participants, searchQuery]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 md:py-12 space-y-6">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 text-[#14213D]">
       {/* 3... 2... 1... GO! Countdown Overlay */}
       {countdown !== null && (
-        <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-2xl flex flex-col items-center justify-center text-center p-6 animate-fade-in select-none">
-          <div className="relative flex items-center justify-center">
-            <div className="absolute w-72 h-72 rounded-full bg-cyan-500/20 blur-3xl animate-pulse" />
-            <div className="relative z-10 w-44 h-44 rounded-full border-4 border-cyan-500/40 bg-slate-900/80 flex items-center justify-center shadow-2xl shadow-cyan-500/40">
-              <span className="font-mono text-7xl sm:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-indigo-300 animate-scale-up">
-                {countdown === 0 ? 'GO!' : countdown}
-              </span>
-            </div>
+        <div className="fixed inset-0 z-[100] bg-[#14213D]/90 backdrop-blur-2xl flex flex-col items-center justify-center text-center p-6 animate-fade-in select-none text-white">
+          <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-white/10 border-4 border-white/20 flex items-center justify-center mb-6 shadow-2xl shadow-[#1769E0]/40 animate-pulse">
+            <span className="font-mono text-7xl sm:text-9xl font-black text-white">
+              {countdown === 0 ? 'GO!' : countdown}
+            </span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-white mt-8 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
             {countdown === 0 ? 'Quiz Launched!' : 'Quiz Starting In...'}
           </h2>
-          <p className="text-sm text-cyan-300/80 font-medium mt-2">
+          <p className="text-sm text-slate-300 font-medium mt-2">
             Get ready to answer fast and climb the leaderboard!
           </p>
         </div>
@@ -213,14 +222,14 @@ export function WaitingRoom({ initialState }: Props) {
 
       {/* Starting Fullscreen Overlay */}
       {startingNotice && countdown === null && (
-        <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center text-center p-6 animate-fade-in">
-          <div className="w-20 h-20 rounded-3xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 flex items-center justify-center mb-6 animate-bounce shadow-2xl shadow-cyan-500/30">
-            <Zap className="w-10 h-10 text-cyan-400" />
+        <div className="fixed inset-0 z-[100] bg-[#14213D]/90 backdrop-blur-xl flex flex-col items-center justify-center text-center p-6 animate-fade-in text-white">
+          <div className="w-20 h-20 rounded-3xl bg-white/10 border-2 border-white/20 text-[#1769E0] flex items-center justify-center mb-6 animate-bounce shadow-2xl">
+            <Zap className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-bold font-serif-title mb-2 tracking-tight">
             Quiz is Launching!
           </h2>
-          <p className="text-sm sm:text-base text-cyan-300 font-semibold">
+          <p className="text-sm sm:text-base text-slate-300 font-semibold">
             Prepare yourself! Loading quiz questions...
           </p>
         </div>
@@ -228,186 +237,251 @@ export function WaitingRoom({ initialState }: Props) {
 
       {/* Toast when player joins live */}
       {newPlayerToast && (
-        <div className="fixed top-20 right-4 z-50 animate-slide-up flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 backdrop-blur-xl shadow-2xl">
-          <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
-          <span className="text-xs font-bold">
-            <strong className="text-white font-extrabold">{newPlayerToast}</strong> entered the room!
+        <div className="fixed top-20 right-4 z-50 animate-slide-up flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-[#E8F8F0] border border-[#C2F0D8] text-[#0F8A52] backdrop-blur-xl shadow-xl">
+          <Sparkles className="w-4 h-4 text-[#0F8A52] animate-pulse" />
+          <span className="text-xs font-bold text-[#14213D]">
+            <strong className="text-[#0F8A52] font-extrabold">{newPlayerToast}</strong> entered the room!
           </span>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 1. HERO BANNER: 8-DIGIT PROMINENT ROOM CODE                               */}
-      {/* ========================================================================= */}
-      <div className="flex justify-start">
+      {/* Back Button */}
+      <div className="flex justify-between items-center">
         <BackButton fallbackUrl="/join-quiz" label="Leave Waiting Room" />
+        {isHost && (
+          <Link
+            href={`/room/${state.roomCode}/dashboard`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs text-[#1769E0] bg-[#EBF3FC] border border-[#C8DEF7] hover:bg-[#DCEBFB] transition-all shadow-2xs"
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Host Dashboard</span>
+          </Link>
+        )}
       </div>
 
-      <div className="rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 border-2 border-cyan-500/30 p-4 sm:p-8 backdrop-blur-2xl shadow-2xl shadow-cyan-500/10 text-center space-y-4 relative overflow-hidden">
-        <div className="absolute top-0 right-1/4 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
+      {/* ========================================================================= */}
+      {/* 1. HERO BANNER: ACADEMIC ROOM CODE & QR CODE                              */}
+      {/* ========================================================================= */}
+      <div className="rounded-3xl bg-white border-2 border-[#E5EAF0] p-6 sm:p-8 shadow-xs text-center space-y-6 relative overflow-hidden">
+        <div className="space-y-2 pb-5 border-b border-[#E5EAF0]">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EBF3FC] border border-[#C8DEF7] text-[#1769E0] text-xs font-bold shadow-2xs">
+            <Radio className="w-3.5 h-3.5 text-[#1769E0] animate-pulse" />
+            <span className="uppercase tracking-wider text-[11px]">Multiplayer Room Lobby</span>
+          </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-[11px] sm:text-xs font-bold">
-          <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-          <span>LIVE TOURNAMENT ROOM CODE</span>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#14213D] font-serif-title tracking-tight">
+            {state.quizName}
+          </h1>
+          <p className="text-xs sm:text-sm text-[#5B667A]">
+            Track: <strong className="text-[#14213D]">{state.courseName}</strong> • {state.questionCount} Questions • {state.timeLimit} Min Limit
+          </p>
         </div>
 
-        <div>
-          <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight">{state.quizName}</h1>
-          <p className="text-xs text-slate-400 mt-0.5">Category: {state.courseName}</p>
-        </div>
+        {/* Code & QR Code Row */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+          {/* Left: Room Code */}
+          <div className="md:col-span-3 rounded-2xl bg-[#F7F8FA] border-2 border-[#E5EAF0] p-5 sm:p-6 text-center space-y-3">
+            <span className="text-xs font-bold text-[#5B667A] uppercase tracking-wider block">
+              6-Digit Room Code
+            </span>
 
-        {/* Big 8-digit Code */}
-        <div className="inline-block p-2.5 sm:p-5 rounded-2xl bg-slate-950/90 border border-cyan-500/40 shadow-xl shadow-cyan-500/10 max-w-full">
-          <span className="font-mono text-3xl sm:text-6xl md:text-7xl font-black tracking-wider sm:tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-indigo-300 select-all block">
-            {state.roomCode}
-          </span>
-        </div>
+            <div className="py-2.5 px-4 rounded-2xl bg-white border-2 border-[#C8DEF7] shadow-xs inline-block w-full max-w-sm">
+              <span className="font-mono text-4xl sm:text-6xl font-black tracking-[0.2em] sm:tracking-[0.25em] text-[#1769E0] select-all block">
+                {state.roomCode}
+              </span>
+            </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 pt-1">
-          <button
-            onClick={copyRoomCode}
-            className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-xs font-bold text-white transition-all cursor-pointer shadow-sm"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Code Copied!' : 'Copy Room Code'}</span>
-          </button>
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <button
+                onClick={copyRoomCode}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1769E0] hover:bg-[#1257BD] text-xs font-bold text-white transition-all cursor-pointer shadow-md shadow-[#1769E0]/20 active:scale-95"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? 'Code Copied!' : 'Copy Code'}</span>
+              </button>
 
-          <button
-            onClick={copyJoinLink}
-            className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer shadow-sm"
-          >
-            <Share2 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Invite Link</span>
-          </button>
+              <button
+                onClick={copyJoinLink}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#EBF3FC] hover:bg-[#DCEBFB] border border-[#C8DEF7] text-xs font-bold text-[#1769E0] transition-all cursor-pointer shadow-2xs active:scale-95"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Invite Link</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Right: QR Code */}
+          <div className="md:col-span-2 rounded-2xl bg-[#F7F8FA] border-2 border-[#E5EAF0] p-4 flex flex-col items-center justify-center text-center space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-[#14213D]">
+              <QrCode className="w-3.5 h-3.5 text-[#1769E0]" />
+              <span>Invite Friends Nearby</span>
+            </div>
+
+            <div className="relative group p-2 bg-white rounded-xl border border-[#E5EAF0] shadow-2xs">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrCodeUrl}
+                alt={`Room #${state.roomCode} QR Code`}
+                className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={() => setShowQrModal(true)}
+                className="absolute inset-0 bg-[#14213D]/40 backdrop-blur-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-bold gap-1 cursor-pointer"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Enlarge</span>
+              </button>
+            </div>
+
+            <span className="text-[10px] text-[#5B667A]">Scan camera to join</span>
+          </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
       {/* 2. WAITING FOR HOST STATUS                                                */}
       {/* ========================================================================= */}
-      <div className="rounded-3xl bg-slate-900/80 border border-slate-800 p-6 sm:p-8 backdrop-blur-xl shadow-xl space-y-6">
-        <div className="rounded-2xl bg-slate-950/70 border border-slate-800/80 p-6 text-center space-y-4">
+      <div className="rounded-3xl bg-white border-2 border-[#E5EAF0] p-6 sm:p-8 shadow-xs space-y-6">
+        <div className="rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] p-6 text-center space-y-3">
           <div className="relative inline-flex items-center justify-center">
-            <div className="w-16 h-16 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center">
-              <Users className="w-8 h-8 text-cyan-400 animate-pulse" />
+            <div className="w-16 h-16 rounded-full bg-[#EBF3FC] border-2 border-[#C8DEF7] flex items-center justify-center text-[#1769E0]">
+              <Users className="w-8 h-8 animate-pulse" />
             </div>
             <span className="absolute top-0 right-0 flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0F8A52] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-[#0F8A52]"></span>
             </span>
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-xl font-extrabold text-white">Waiting for Host to Launch Quiz</h2>
-            <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-              Stay tuned! As soon as the host clicks &quot;Start Quiz&quot;, your assessment will load automatically on this screen.
+            <h3 className="text-lg font-bold text-[#14213D] font-serif-title">
+              Waiting for Host to Launch Quiz...
+            </h3>
+            <p className="text-xs text-[#5B667A] max-w-md mx-auto">
+              Please keep this tab open. When the host hits Start, your screen will automatically count down 3-2-1 and start the assessment.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-300 pt-1">
-            <span className="inline-flex items-center gap-1.5 bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-800">
-              <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-              <strong>{state.questionCount}</strong> Questions
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-800">
-              <Clock className="w-3.5 h-3.5 text-amber-400" />
-              <strong>{state.timeLimit}</strong> Minutes
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-emerald-950/40 text-emerald-300 px-3.5 py-1.5 rounded-xl border border-emerald-500/30">
-              <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-              <strong>{state.participants.length}</strong> Players Live
-            </span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F8F0] border border-[#C2F0D8] text-xs font-bold text-[#0F8A52]">
+            <span className="w-2 h-2 rounded-full bg-[#0F8A52] animate-ping" />
+            <span>You are connected and ready</span>
           </div>
         </div>
 
-        {/* Host banner if current user is host */}
-        {isHost && (
-          <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <div className="text-xs font-bold text-cyan-300">You are the Quiz Host</div>
-              <div className="text-[11px] text-slate-400">You can start the tournament from the Host Dashboard</div>
-            </div>
-            <Link
-              href={`/room/${state.roomCode}/dashboard`}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors shadow-md shadow-cyan-500/20 shrink-0"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Open Host Dashboard
-            </Link>
-          </div>
-        )}
-
         {/* ========================================================================= */}
-        {/* 3. LIVE PARTICIPANTS WALL (REALTIME UPDATES WITH SEARCH)                   */}
+        {/* 3. LOBBY ROSTER (JOINED PLAYERS)                                          */}
         {/* ========================================================================= */}
         <div className="space-y-4 pt-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E5EAF0]">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm text-white">Joined Players</span>
-              <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              <h3 className="text-sm font-bold text-[#14213D] uppercase tracking-wider">
+                Players in Lobby
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EBF3FC] text-[#1769E0] border border-[#C8DEF7]">
                 {state.participants.length}
               </span>
             </div>
 
-            {/* Search bar for 1000+ players */}
-            <div className="relative w-full sm:w-56">
-              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            {/* Live Search */}
+            <div className="relative w-full sm:w-60">
+              <Search className="w-3.5 h-3.5 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search joined player..."
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500"
+                placeholder="Search lobby..."
+                className="w-full pl-9 pr-3 py-1.5 bg-[#F7F8FA] border border-[#E5EAF0] rounded-xl text-xs font-semibold text-[#14213D] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#1769E0]"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-72 overflow-y-auto pr-1">
             {filteredParticipants.map((p) => {
               const isCurrentUser = user && user.id === p.userId;
               return (
                 <div
                   key={p.id}
-                  className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+                  className={`p-3 rounded-2xl border text-center flex flex-col items-center gap-1.5 transition-all shadow-2xs ${
                     isCurrentUser
-                      ? 'bg-cyan-950/40 border-cyan-500/40 text-white shadow-md shadow-cyan-500/10'
-                      : 'bg-slate-950/60 border-slate-800/80 text-slate-300 hover:border-slate-700'
+                      ? 'bg-[#EBF3FC] border-2 border-[#1769E0]'
+                      : 'bg-[#F7F8FA] border-[#E5EAF0] hover:border-[#CBD5E1]'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden shadow-inner">
+                  <div className="w-10 h-10 rounded-full bg-[#EBF3FC] border border-[#C8DEF7] flex items-center justify-center font-bold text-xs text-[#1769E0] overflow-hidden">
                     {p.userAvatar ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={p.userAvatar} alt={p.userName} className="w-full h-full object-cover" />
+                      <img src={p.userAvatar} alt={p.userName} className="w-full h-full object-cover rounded-full" />
                     ) : (
-                      p.userName.slice(0, 2).toUpperCase()
+                      p.userName.charAt(0).toUpperCase()
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-bold truncate flex items-center gap-1">
-                      <span>{p.userName}</span>
-                      {isCurrentUser && (
-                        <span className="text-[10px] text-cyan-400 font-semibold">(You)</span>
-                      )}
-                    </div>
-                    <div className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      Ready in lobby
-                    </div>
-                  </div>
+                  <span className="font-bold text-xs text-[#14213D] truncate max-w-[120px]">
+                    {p.userName} {isCurrentUser && '(You)'}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E8F8F0] text-[#0F8A52] border border-[#C2F0D8]">
+                    Ready
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Proctoring Notice */}
-        <div className="p-3.5 rounded-2xl bg-slate-950/50 border border-slate-800/80 text-xs text-slate-400 flex items-start gap-2.5">
-          <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-          <span>
-            <strong>Anti-Cheat Active:</strong> Tab changes, window minimizes, and blur events are monitored during the live quiz.
-          </span>
+        {/* Quiz Rules & Ethics Card */}
+        <div className="p-4 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] flex items-start gap-3 text-xs text-[#5B667A]">
+          <ShieldCheck className="w-4 h-4 text-[#1769E0] shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-bold text-[#14213D] block">Assessment Room Integrity Protocol</span>
+            <p>
+              Tab switching and window blur events are logged automatically. Please maintain continuous window focus throughout the quiz.
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* QR Code Modal for Waiting Room */}
+      {showQrModal && (
+        <div
+          className="fixed inset-0 z-[120] bg-[#14213D]/60 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowQrModal(false)}
+        >
+          <div
+            className="bg-white border-2 border-[#E5EAF0] rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF3FC] border border-[#C8DEF7] text-[#1769E0] text-xs font-bold">
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Room #{state.roomCode}</span>
+            </div>
+
+            <h3 className="text-xl font-bold text-[#14213D] font-serif-title">
+              Scan to Enter Room
+            </h3>
+
+            <div className="p-3 bg-white rounded-2xl border-2 border-[#E5EAF0] shadow-xs inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrCodeUrl}
+                alt={`Room #${state.roomCode} QR Code`}
+                className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl"
+              />
+            </div>
+
+            <p className="text-xs text-[#5B667A]">
+              Anyone who scans this QR code will join this waiting lobby directly.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="w-full py-2.5 rounded-xl font-bold text-xs text-[#14213D] bg-[#F7F8FA] hover:bg-[#E5EAF0] border border-[#E5EAF0] transition-colors cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,7 +3,18 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, ChevronDown, User, Settings, LogOut, LogIn, Swords, GraduationCap } from 'lucide-react';
+import {
+  Bell,
+  ChevronDown,
+  User,
+  Settings,
+  LogOut,
+  LogIn,
+  Swords,
+  GraduationCap,
+  Menu,
+  X,
+} from 'lucide-react';
 import { useUser } from '@/lib/supabase/useUser';
 import { useClerk } from '@clerk/nextjs';
 import { CourseSearch } from './CourseSearch';
@@ -17,6 +28,7 @@ export function Header() {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -29,6 +41,18 @@ export function Header() {
     setNotificationsOpen(false);
     setShowLogoutModal(false);
   }, [pathname]);
+
+  // Track mobile sidebar drawer open state
+  useEffect(() => {
+    const handleSidebarChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ open: boolean }>;
+      if (customEvent.detail && typeof customEvent.detail.open === 'boolean') {
+        setIsMobileNavOpen(customEvent.detail.open);
+      }
+    };
+    window.addEventListener('cq-sidebar-open-change', handleSidebarChange);
+    return () => window.removeEventListener('cq-sidebar-open-change', handleSidebarChange);
+  }, []);
 
   // Click outside listener
   useEffect(() => {
@@ -89,16 +113,27 @@ export function Header() {
     <>
       <header
         style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.88)',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderColor: 'rgba(229, 234, 240, 0.85)',
+          borderColor: 'rgba(229, 234, 240, 0.9)',
         }}
-        className="sticky top-0 z-40 w-full h-16 bg-white/90 backdrop-blur-md border-b border-[#E5EAF0]/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 select-none shadow-xs transition-all"
+        className="sticky top-0 z-40 w-full h-16 bg-white/95 backdrop-blur-md border-b border-[#E5EAF0] px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 select-none shadow-xs transition-all"
       >
-        {/* ── LEFT: LOGO & BRANDING ── */}
-        <div className="flex items-center gap-6 shrink-0">
-          <Link href="/" className="flex items-center gap-2.5 group">
+        {/* ── LEFT: MOBILE HAMBURGER BUTTON + LOGO & BRANDING ── */}
+        <div className="flex items-center gap-2 sm:gap-6 shrink-0">
+          {/* Mobile Hamburger Drawer Button (Moved from bottom to Header) */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('cq-toggle-sidebar'))}
+            className="md:hidden w-9 h-9 rounded-xl bg-[#F0F4F8] hover:bg-[#E5EAF0] border border-[#E5EAF0] text-[#14213D] flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0"
+            aria-label="Toggle navigation menu"
+            title="Navigation Menu"
+          >
+            {isMobileNavOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0">
             <div className="w-8 h-8 rounded-xl bg-[#1769E0] text-white flex items-center justify-center shadow-sm group-hover:bg-[#1257BD] transition-colors">
               <GraduationCap className="w-4 h-4" />
             </div>
@@ -130,18 +165,23 @@ export function Header() {
           </nav>
         </div>
 
-        {/* ── CENTER: LIVE COURSE SEARCH ── */}
-        <div className="flex-1 flex justify-center max-w-xl mx-auto px-2">
-          <CourseSearch />
+        {/* ── CENTER: DESKTOP LIVE COURSE SEARCH (hidden on mobile) ── */}
+        <div className="hidden md:flex flex-1 justify-center max-w-xl mx-auto px-2">
+          <CourseSearch mode="desktop" />
         </div>
 
-        {/* ── RIGHT: NOTIFICATIONS & USER PROFILE OR SIGN IN ── */}
+        {/* ── RIGHT: MOBILE SEARCH ICON + NOTIFICATIONS & USER PROFILE OR SIGN IN ── */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Mobile Search Icon Only (< md) */}
+          <div className="md:hidden">
+            <CourseSearch mode="mobile" />
+          </div>
+
           {!isAuthed ? (
             /* UNAUTHENTICATED: Show ONLY Sign In Button */
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1769E0] hover:bg-[#1257BD] text-white text-xs sm:text-sm font-bold transition-all shadow-xs"
+              className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-[#1769E0] hover:bg-[#1257BD] text-white text-xs sm:text-sm font-bold transition-all shadow-xs"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Sign In</span>

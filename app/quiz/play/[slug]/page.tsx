@@ -32,15 +32,18 @@ export default async function QuizPlayPage({ params, searchParams }: Props) {
   if (loadFailed || !data) {
     return (
       <div className="w-full max-w-lg mx-auto px-4 py-24 text-center">
-        <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
-          <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
+        <div className="p-8 rounded-3xl bg-white border-2 border-[#E5EAF0] shadow-xs space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#FDF2F2] border border-[#FECDCA] text-[#D92D20] flex items-center justify-center mx-auto shadow-xs">
             <AlertCircle className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-white">Quiz Not Available</h2>
-          <p className="text-xs text-slate-400">
+          <h2 className="text-xl font-bold text-[#14213D] font-serif-title">Quiz Not Available</h2>
+          <p className="text-xs text-[#5B667A]">
             Couldn&apos;t load questions for &ldquo;{slug}&rdquo;. The course may not have enough questions for your selected count.
           </p>
-          <Link href="/courses" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors">
+          <Link
+            href="/courses"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[#1769E0] hover:bg-[#1257BD] transition-all shadow-md shadow-[#1769E0]/20"
+          >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Courses</span>
           </Link>

@@ -252,27 +252,27 @@ export function ProfileAvatarModal({
 
       {/* Full-Featured, Expansive Modal Dialog */}
       {isOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-2xl animate-fade-in select-none">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-[#14213D]/50 backdrop-blur-md animate-fade-in select-none">
           {/* Backdrop Click Dismiss */}
           <div
             className="absolute inset-0 -z-10"
             onClick={() => !loading && setIsOpen(false)}
           />
 
-          <div className="relative w-full max-w-3xl sm:max-w-4xl rounded-3xl bg-slate-900/95 border border-slate-700/80 shadow-2xl shadow-cyan-950/40 p-5 sm:p-8 space-y-6 max-h-[94vh] overflow-y-auto">
+          <div className="relative w-full max-w-3xl sm:max-w-4xl rounded-3xl bg-white border-2 border-[#E5EAF0] shadow-2xl p-5 sm:p-8 space-y-6 max-h-[92vh] overflow-y-auto text-[#14213D]">
             {/* Modal Header */}
-            <div className="flex items-start justify-between pb-4 border-b border-slate-800">
+            <div className="flex items-start justify-between pb-4 border-b border-[#E5EAF0]">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/25">
+                  <div className="w-8 h-8 rounded-xl bg-[#EBF3FC] border border-[#C8DEF7] flex items-center justify-center text-[#1769E0] shadow-xs">
                     <Sparkles className="w-4 h-4" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                    Customize Profile & Avatar
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#14213D] font-serif-title tracking-tight">
+                    Customize Profile &amp; Avatar
                   </h3>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-400 pl-10">
-                  Upload your photo, select a high-tech developer avatar, or customize your display identity.
+                <p className="text-xs sm:text-sm text-[#5B667A] pl-10">
+                  Upload your photo, select a handcrafted developer avatar, or customize your display identity.
                 </p>
               </div>
 
@@ -280,7 +280,7 @@ export function ProfileAvatarModal({
                 type="button"
                 onClick={() => setIsOpen(false)}
                 disabled={loading}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-[#5B667A] hover:text-[#14213D] hover:bg-[#F7F8FA] border border-[#E5EAF0] transition-colors cursor-pointer"
                 title="Close (Esc)"
               >
                 <X className="w-5 h-5" />
@@ -290,30 +290,30 @@ export function ProfileAvatarModal({
             {/* 2-Column Responsive Body */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
               {/* Left Column: Live Preview & Identity (4 cols) */}
-              <div className="md:col-span-4 p-5 rounded-2xl bg-slate-950/70 border border-slate-800/90 flex flex-col items-center text-center space-y-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="md:col-span-4 p-5 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] flex flex-col items-center text-center space-y-4">
+                <span className="text-[11px] font-bold text-[#5B667A] uppercase tracking-wider">
                   Live Avatar Preview
                 </span>
 
-                {/* Big Glowing Circular Preview */}
+                {/* Big Preview */}
                 <div className="relative group">
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-tr from-cyan-500 via-sky-400 to-indigo-600 p-1 shadow-2xl shadow-cyan-500/20 shrink-0 overflow-hidden relative">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-[#EBF3FC] border-2 border-[#C8DEF7] p-1 shadow-md shrink-0 overflow-hidden relative flex items-center justify-center">
                     {previewUrl ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={previewUrl}
                         alt="Preview"
-                        className="w-full h-full object-cover rounded-2xl bg-slate-900"
+                        className="w-full h-full object-cover rounded-2xl bg-white"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center font-black text-4xl text-white bg-slate-900 rounded-2xl">
+                      <div className="w-full h-full flex items-center justify-center font-bold text-4xl text-[#1769E0] bg-[#EBF3FC] rounded-2xl">
                         {initial}
                       </div>
                     )}
                   </div>
 
                   {previewUrl && (
-                    <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-emerald-500 text-slate-950 border-2 border-slate-900 shadow-sm" title="Active selection">
+                    <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-[#0F8A52] text-white border-2 border-white shadow-sm" title="Active selection">
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                     </div>
                   )}
@@ -321,23 +321,23 @@ export function ProfileAvatarModal({
 
                 {/* Name Input */}
                 <div className="w-full space-y-1 text-left">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-[#5B667A] uppercase tracking-wider flex items-center justify-between">
                     <span>Display Name</span>
-                    <Edit3 className="w-3 h-3 text-cyan-400" />
+                    <Edit3 className="w-3 h-3 text-[#1769E0]" />
                   </label>
                   <input
                     type="text"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
                     placeholder="Enter display name"
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm font-semibold text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E5EAF0] text-sm font-semibold text-[#14213D] focus:outline-none focus:border-[#1769E0] focus:ring-2 focus:ring-[#1769E0]/15 transition-all shadow-2xs"
                   />
                 </div>
 
                 {/* Account details badge */}
                 <div className="w-full pt-1 space-y-1 text-left">
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
-                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <div className="text-[11px] text-[#5B667A] flex items-center gap-1.5 truncate">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#1769E0] shrink-0" />
                     <span className="truncate">{userEmail || 'Student Account'}</span>
                   </div>
                 </div>
@@ -348,7 +348,7 @@ export function ProfileAvatarModal({
                     type="button"
                     onClick={handleResetAvatar}
                     disabled={loading}
-                    className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/15 border border-rose-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-[#D92D20] hover:text-[#B42318] bg-[#FDF2F2] hover:bg-[#FEE4E2] border border-[#FECDCA] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Reset to Default Initials</span>
@@ -356,17 +356,17 @@ export function ProfileAvatarModal({
                 )}
               </div>
 
-              {/* Right Column: Source Tabs & Large Controls (8 cols) */}
+              {/* Right Column: Source Tabs & Controls (8 cols) */}
               <div className="md:col-span-8 space-y-4">
-                {/* 3 Large Tab Buttons */}
-                <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs sm:text-sm font-bold">
+                {/* 3 Tab Buttons */}
+                <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] text-xs sm:text-sm font-bold shadow-2xs">
                   <button
                     type="button"
                     onClick={() => setActiveTab('upload')}
-                    className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       activeTab === 'upload'
-                        ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                        ? 'bg-white text-[#1769E0] shadow-xs border border-[#E5EAF0]'
+                        : 'text-[#5B667A] hover:text-[#14213D]'
                     }`}
                   >
                     <Upload className="w-4 h-4" />
@@ -376,10 +376,10 @@ export function ProfileAvatarModal({
                   <button
                     type="button"
                     onClick={() => setActiveTab('presets')}
-                    className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       activeTab === 'presets'
-                        ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                        ? 'bg-white text-[#1769E0] shadow-xs border border-[#E5EAF0]'
+                        : 'text-[#5B667A] hover:text-[#14213D]'
                     }`}
                   >
                     <Sparkles className="w-4 h-4" />
@@ -389,10 +389,10 @@ export function ProfileAvatarModal({
                   <button
                     type="button"
                     onClick={() => setActiveTab('url')}
-                    className={`py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       activeTab === 'url'
-                        ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                        ? 'bg-white text-[#1769E0] shadow-xs border border-[#E5EAF0]'
+                        : 'text-[#5B667A] hover:text-[#14213D]'
                     }`}
                   >
                     <LinkIcon className="w-4 h-4" />
@@ -400,7 +400,7 @@ export function ProfileAvatarModal({
                   </button>
                 </div>
 
-                {/* Tab 1: Full-Size Drag & Drop Upload Zone */}
+                {/* Tab 1: Upload Zone */}
                 {activeTab === 'upload' && (
                   <div className="space-y-3">
                     <input
@@ -418,34 +418,34 @@ export function ProfileAvatarModal({
                       onDrop={handleDrop}
                       className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center cursor-pointer transition-all ${
                         isDragging
-                          ? 'border-cyan-400 bg-cyan-500/10 scale-[0.99]'
-                          : 'border-slate-700 hover:border-cyan-400/80 bg-slate-950/50 hover:bg-slate-950/80'
-                      } group`}
+                          ? 'border-[#1769E0] bg-[#EBF3FC] scale-[0.99]'
+                          : 'border-[#CBD5E1] hover:border-[#1769E0] bg-[#F7F8FA] hover:bg-white'
+                      } group shadow-2xs`}
                     >
-                      <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-cyan-500/10">
+                      <div className="w-16 h-16 rounded-2xl bg-[#EBF3FC] border border-[#C8DEF7] text-[#1769E0] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform shadow-xs">
                         <Upload className="w-8 h-8" />
                       </div>
 
                       {selectedFile ? (
                         <div className="space-y-1">
-                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold text-xs sm:text-sm">
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EBF3FC] border border-[#C8DEF7] text-[#1769E0] font-bold text-xs sm:text-sm">
                             <FileImage className="w-4 h-4" />
                             <span className="truncate max-w-xs">{selectedFile.name}</span>
                           </div>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-[#5B667A]">
                             {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to save
                           </p>
-                          <p className="text-[11px] text-cyan-400 hover:underline pt-1">
+                          <p className="text-[11px] text-[#1769E0] hover:underline pt-1">
                             Click or drop another file to replace
                           </p>
                         </div>
                       ) : (
                         <div className="space-y-1.5">
-                          <div className="text-sm sm:text-base font-bold text-white">
-                            Drag & drop your image here, or{' '}
-                            <span className="text-cyan-400 underline underline-offset-4">browse</span>
+                          <div className="text-sm sm:text-base font-bold text-[#14213D]">
+                            Drag &amp; drop your image here, or{' '}
+                            <span className="text-[#1769E0] underline underline-offset-4">browse</span>
                           </div>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-[#5B667A]">
                             Supports PNG, JPG, WEBP, GIF, SVG (Maximum size: 5MB)
                           </p>
                         </div>
@@ -454,12 +454,12 @@ export function ProfileAvatarModal({
                   </div>
                 )}
 
-                {/* Tab 2: Curated 8 Developer Presets Grid */}
+                {/* Tab 2: 8 Developer Presets Grid */}
                 {activeTab === 'presets' && (
                   <div className="space-y-3">
-                    <div className="text-xs font-semibold text-slate-400 flex items-center justify-between">
-                      <span>Choose from 8 high-tech developer personas:</span>
-                      <span className="text-cyan-400 font-bold">1-Click Select</span>
+                    <div className="text-xs font-semibold text-[#5B667A] flex items-center justify-between">
+                      <span>Choose from 8 developer personas:</span>
+                      <span className="text-[#1769E0] font-bold">1-Click Select</span>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -470,14 +470,13 @@ export function ProfileAvatarModal({
                             key={preset.id}
                             type="button"
                             onClick={() => handlePresetSelect(preset.path)}
-                            className={`group relative p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center gap-2 ${
+                            className={`group relative p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center gap-2 shadow-2xs ${
                               isSelected
-                                ? 'bg-cyan-500/15 border-cyan-400 ring-2 ring-cyan-500/40 shadow-xl shadow-cyan-500/15 scale-[1.03]'
-                                : 'bg-slate-950/60 border-slate-800 hover:border-slate-600 hover:bg-slate-950'
+                                ? 'bg-[#EBF3FC] border-2 border-[#1769E0] ring-2 ring-[#1769E0]/15'
+                                : 'bg-[#F7F8FA] border-[#E5EAF0] hover:border-[#CBD5E1] hover:bg-white'
                             }`}
                           >
-                            {/* Preset Vector Avatar */}
-                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl p-1 bg-slate-900 border border-slate-800 flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl p-1 bg-white border border-[#E5EAF0] flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={preset.path}
@@ -486,12 +485,12 @@ export function ProfileAvatarModal({
                               />
                             </div>
 
-                            <span className="text-[11px] font-bold text-slate-200 truncate w-full text-center">
+                            <span className="text-[11px] font-bold text-[#14213D] truncate w-full text-center">
                               {preset.name}
                             </span>
 
                             {isSelected && (
-                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center shadow-md">
+                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#1769E0] text-white flex items-center justify-center shadow-xs">
                                 <Check className="w-3.5 h-3.5 stroke-[3]" />
                               </div>
                             )}
@@ -504,8 +503,8 @@ export function ProfileAvatarModal({
 
                 {/* Tab 3: Direct URL */}
                 {activeTab === 'url' && (
-                  <div className="p-6 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-4">
-                    <label className="text-xs font-bold text-slate-300 block">
+                  <div className="p-5 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] space-y-3">
+                    <label className="text-xs font-bold text-[#14213D] block">
                       Direct Public Image URL
                     </label>
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -514,17 +513,17 @@ export function ProfileAvatarModal({
                         value={customUrlInput}
                         onChange={(e) => setCustomUrlInput(e.target.value)}
                         placeholder="https://github.com/identicons/username.png"
-                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-[#E5EAF0] text-sm text-[#14213D] placeholder-[#94A3B8] focus:outline-none focus:border-[#1769E0] focus:ring-2 focus:ring-[#1769E0]/15"
                       />
                       <button
                         type="button"
                         onClick={handleUrlApply}
-                        className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-xs sm:text-sm font-bold text-white border border-slate-700 transition-colors cursor-pointer shrink-0"
+                        className="px-5 py-2.5 rounded-xl bg-[#1769E0] hover:bg-[#1257BD] text-xs sm:text-sm font-bold text-white transition-colors cursor-pointer shrink-0 shadow-md shadow-[#1769E0]/20"
                       >
                         Preview Image
                       </button>
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-[#5B667A]">
                       Paste a direct image link from GitHub, Discord, Gravatar, Unsplash, or any public host.
                     </p>
                   </div>
@@ -534,25 +533,25 @@ export function ProfileAvatarModal({
 
             {/* Error or Success feedback banner */}
             {errorMsg && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs sm:text-sm font-medium animate-fade-in flex items-center gap-2">
-                <X className="w-4 h-4 text-rose-400 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-[#FDF2F2] border border-[#FECDCA] text-[#D92D20] text-xs sm:text-sm font-medium animate-fade-in flex items-center gap-2">
+                <X className="w-4 h-4 text-[#D92D20] shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
             {successMsg && (
-              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-[#ECFDF3] border border-[#A6F4C5] text-[#027A48] text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in">
+                <Check className="w-4 h-4 text-[#027A48] shrink-0" />
                 <span>{successMsg}</span>
               </div>
             )}
 
             {/* Modal Bottom Action Bar */}
-            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-800">
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-[#E5EAF0]">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 disabled={loading}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-750 border border-slate-700 transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#5B667A] hover:text-[#14213D] bg-[#F7F8FA] hover:bg-[#E5EAF0] border border-[#E5EAF0] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -561,7 +560,7 @@ export function ProfileAvatarModal({
                 type="button"
                 onClick={handleSave}
                 disabled={loading}
-                className="w-full sm:w-auto px-7 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400 hover:from-cyan-300 hover:to-sky-300 transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full sm:w-auto px-7 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#1769E0] hover:bg-[#1257BD] transition-all shadow-md shadow-[#1769E0]/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <>

@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from './auth';
 
-function withTimeout<T>(promise: Promise<T>, ms = 2500, errorMsg = 'Database operation timed out'): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, ms = 10000, errorMsg = 'Database operation timed out'): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) => setTimeout(() => reject(new Error(errorMsg)), ms)),
@@ -113,7 +113,7 @@ export async function getGlobalLeaderboard(): Promise<{
           createdAt: true,
         },
       }),
-      2500
+      10000
     );
 
     // Compute effective scores with decay
@@ -198,13 +198,13 @@ export async function getUserAnalytics(clerkUserId?: string): Promise<UserAnalyt
     if (!targetUserId) return null;
 
     // Recalculate stats with safe timeout
-    await withTimeout(recalculateUserStats(targetUserId), 2000).catch(() => {});
+    await withTimeout(recalculateUserStats(targetUserId), 8000).catch(() => {});
 
     const user = await withTimeout(
       prisma.user.findFirst({
         where: { clerkUserId: targetUserId },
       }),
-      2000
+      10000
     );
 
     if (!user) return null;
@@ -221,7 +221,7 @@ export async function getUserAnalytics(clerkUserId?: string): Promise<UserAnalyt
           createdAt: true,
         },
       }),
-      2000
+      10000
     );
 
     const ranked = allUsers.map((u) => ({

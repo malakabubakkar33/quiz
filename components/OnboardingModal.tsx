@@ -178,9 +178,15 @@ export function OnboardingModal({
   };
 
   const formCard = (
-    <div className="relative w-full max-w-2xl rounded-3xl bg-white border-2 border-[#E5EAF0] shadow-2xl shadow-[#14213D]/10 p-5 sm:p-8 space-y-6 text-[#14213D]">
-      {/* ── TOP HEADER SECTION ── */}
-      <div className="space-y-3 pb-4 border-b border-[#E5EAF0]">
+    <div
+      className={`relative w-full max-w-2xl my-auto rounded-3xl bg-white border-2 border-[#E5EAF0] shadow-2xl shadow-[#14213D]/15 text-[#14213D] flex flex-col ${
+        isStandalonePage
+          ? 'max-h-[calc(100dvh-6rem)] sm:max-h-[min(88vh,880px)]'
+          : 'max-h-[calc(100dvh-2rem)] sm:max-h-[min(90vh,880px)]'
+      } overflow-hidden`}
+    >
+      {/* ── TOP HEADER SECTION (Pinned at top) ── */}
+      <div className="shrink-0 p-5 sm:p-7 pb-4 border-b border-[#E5EAF0] bg-white space-y-3 z-10">
         <div className="flex items-center justify-between gap-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold text-[#1769E0] bg-[#EBF3FC] border border-[#C8DEF7] shadow-2xs">
             <GraduationCap className="w-3.5 h-3.5 text-[#1769E0]" />
@@ -226,7 +232,7 @@ export function OnboardingModal({
         </div>
 
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#14213D] font-serif-title tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#14213D] font-serif-title tracking-tight">
             Welcome to QuizCode
           </h2>
           <p className="text-xs sm:text-sm text-[#5B667A] mt-1 leading-relaxed">
@@ -259,9 +265,11 @@ export function OnboardingModal({
         </div>
       </div>
 
-      {/* ── FORM BODY ── */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Section 1: Full Name & Unique Username */}
+      {/* ── FORM WITH SCROLLABLE FIELDS & DOCKED FOOTER ── */}
+      <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1 overflow-hidden">
+        {/* Scrollable Form Body */}
+        <div className="overflow-y-auto flex-1 p-5 sm:p-7 py-5 space-y-5 overscroll-contain focus:outline-none">
+          {/* Section 1: Full Name & Unique Username */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Full Name */}
           <div className="space-y-1.5">
@@ -526,23 +534,25 @@ export function OnboardingModal({
           </div>
         </div>
 
-        {/* Feedback Messages */}
-        {errorMessage && (
-          <div className="p-3.5 rounded-xl bg-[#FDF2F2] border border-[#FECDCA] text-[#D92D20] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-[#D92D20] shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
+        {/* Close the scrollable form fields container */}
+        </div>
 
-        {isSuccess && (
-          <div className="p-3.5 rounded-xl bg-[#ECFDF3] border border-[#A6F4C5] text-[#027A48] text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#027A48] shrink-0" />
-            <span>Academic profile saved! Opening QuizCode...</span>
-          </div>
-        )}
+        {/* ── STICKY / DOCKED ACTION FOOTER (Always Visible & Accessible!) ── */}
+        <div className="shrink-0 p-4 sm:p-6 pt-3.5 border-t border-[#E5EAF0] bg-[#FAFCFF] sm:bg-white rounded-b-3xl space-y-2.5 shadow-[0_-4px_20px_rgba(20,33,61,0.06)] z-10">
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-[#FDF2F2] border border-[#FECDCA] text-[#D92D20] text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-[#D92D20] shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
-        {/* Submit Action Dock */}
-        <div className="pt-2 space-y-2.5">
+          {isSuccess && (
+            <div className="p-3 rounded-xl bg-[#ECFDF3] border border-[#A6F4C5] text-[#027A48] text-xs font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#027A48] shrink-0" />
+              <span>Academic profile saved! Opening QuizCode...</span>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={submitting || usernameAvailable === false}
@@ -587,7 +597,7 @@ export function OnboardingModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-6 bg-[#14213D]/40 backdrop-blur-md animate-fade-in select-none">
+    <div className="fixed inset-0 z-[99999] overflow-y-auto bg-[#14213D]/50 backdrop-blur-md animate-fade-in p-3 sm:p-6 md:p-8 flex min-h-screen items-center justify-center">
       {formCard}
     </div>
   );

@@ -1,8 +1,20 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Loader2, Layers, ArrowRight, X, Code2 } from 'lucide-react';
+import {
+  Search,
+  Loader2,
+  Layers,
+  ArrowRight,
+  X,
+  Sparkles,
+  BookOpen,
+  Hash,
+  Compass,
+  Play,
+  Check,
+} from 'lucide-react';
 import {
   getCourseSearchResults,
   type CourseSearchResultItem,
@@ -10,37 +22,84 @@ import {
 } from '@/app/actions/quiz';
 import { CourseTechIcon } from './CourseTechIcon';
 
-export function CourseSearch() {
+const CATEGORIES = [
+  { id: 'all', label: 'All Tracks' },
+  { id: 'frontend', label: 'Frontend' },
+  { id: 'backend', label: 'Backend' },
+  { id: 'database', label: 'Databases' },
+  { id: 'devops', label: 'DevOps & Tools' },
+];
+
+interface CourseSearchProps {
+  mode?: 'all' | 'desktop' | 'mobile';
+}
+
+export function CourseSearch({ mode = 'all' }: CourseSearchProps) {
   const router = useRouter();
-  const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const [courses, setCourses] = useState<CourseSearchResultItem[]>([]);
   const [topics, setTopics] = useState<TopicSearchResultItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Total selectable items across courses & topics
-  const allItems = [
-    ...courses.map((c) => ({ type: 'course' as const, id: c.slug, data: c })),
-    ...topics.map((t) => ({ type: 'topic' as const, id: `${t.courseSlug}:${t.topicName}`, data: t })),
-  ];
-
-  // Debounced search fetching real data
-  useEffect(() => {
-    if (!query.trim()) {
-      setCourses([]);
+  // Load default suggested courses on initial modal open
+  const loadInitialCourses = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const results = await getCourseSearchResults('');
+      setCourses(results.courses);
       setTopics([]);
-      setIsOpen(false);
+    } catch (err) {
+      console.error('Failed to load suggested courses:', err);
+    } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  // When modal opens, load courses and focus input
+  useEffect(() => {
+    if (isOpen) {
+      loadInitialCourses();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+    } else {
+      setQuery('');
+      setActiveCategory('all');
       setSelectedIndex(-1);
+    }
+  }, [isOpen, loadInitialCourses]);
+
+  // Global Ctrl+K / Cmd+K keyboard shortcut
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsOpen((prev) => !prev);
+      }
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKey);
+    return () => window.removeEventListener('keydown', handleGlobalKey);
+  }, [isOpen]);
+
+  // Debounced live query search
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (!query.trim()) {
+      loadInitialCourses();
       return;
     }
 
     setIsLoading(true);
-    setIsOpen(true);
     const timeout = setTimeout(async () => {
       try {
         const results = await getCourseSearchResults(query);
@@ -52,248 +111,387 @@ export function CourseSearch() {
       } finally {
         setIsLoading(false);
       }
-    }, 180);
+    }, 150);
 
     return () => clearTimeout(timeout);
-  }, [query]);
+  }, [query, isOpen, loadInitialCourses]);
 
-  // Click outside listener
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+  // Filter courses by category tab if selected
+  const displayedCourses = useMemo(() => {
+    if (activeCategory === 'all') return courses;
+    return courses.filter((c) => {
+      const cat = (c.category || '').toLowerCase();
+      const badge = (c.badge || '').toLowerCase();
+      const name = c.name.toLowerCase();
+      if (activeCategory === 'frontend') {
+        return cat.includes('front') || badge.includes('front') || ['html', 'css', 'javascript', 'react', 'typescript'].includes(c.slug);
       }
-    };
+      if (activeCategory === 'backend') {
+        return cat.includes('back') || badge.includes('back') || ['python', 'node', 'django', 'backend'].includes(c.slug);
+      }
+      if (activeCategory === 'database') {
+        return cat.includes('data') || badge.includes('data') || ['sql', 'mongodb', 'postgresql'].includes(c.slug);
+      }
+      if (activeCategory === 'devops') {
+        return cat.includes('devops') || badge.includes('version') || ['git', 'docker', 'linux'].includes(c.slug);
+      }
+      return true;
+    });
+  }, [courses, activeCategory]);
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Selection navigation handler
   const handleSelectCourse = (slug: string) => {
     setIsOpen(false);
-    setQuery('');
     router.push(`/quiz/setup/${slug}`);
   };
 
   const handleSelectTopic = (courseSlug: string, topicName: string) => {
     setIsOpen(false);
-    setQuery('');
     router.push(`/quiz/setup/${courseSlug}?topic=${encodeURIComponent(topicName)}`);
   };
 
-  // Keyboard navigation
+  // Keyboard navigation inside modal
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter') {
-        if (query.trim()) setIsOpen(true);
-      }
+    if (e.key === 'Escape') {
+      setIsOpen(false);
       return;
     }
 
-    if (e.key === 'Escape') {
-      setIsOpen(false);
-      inputRef.current?.blur();
-      return;
-    }
+    const total = displayedCourses.length + topics.length;
+    if (total === 0) return;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev < allItems.length - 1 ? prev + 1 : 0));
-      return;
-    }
-
-    if (e.key === 'ArrowUp') {
+      setSelectedIndex((prev) => (prev < total - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : allItems.length - 1));
-      return;
-    }
-
-    if (e.key === 'Enter') {
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : total - 1));
+    } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (selectedIndex >= 0 && selectedIndex < allItems.length) {
-        const item = allItems[selectedIndex];
-        if (item.type === 'course') {
-          handleSelectCourse((item.data as CourseSearchResultItem).slug);
-        } else {
-          const t = item.data as TopicSearchResultItem;
-          handleSelectTopic(t.courseSlug, t.topicName);
-        }
-      } else if (courses.length > 0) {
-        handleSelectCourse(courses[0].slug);
-      } else {
-        router.push('/courses');
-        setIsOpen(false);
+      if (selectedIndex >= 0 && selectedIndex < displayedCourses.length) {
+        handleSelectCourse(displayedCourses[selectedIndex].slug);
+      } else if (selectedIndex >= displayedCourses.length) {
+        const topic = topics[selectedIndex - displayedCourses.length];
+        if (topic) handleSelectTopic(topic.courseSlug, topic.topicName);
+      } else if (displayedCourses.length > 0) {
+        handleSelectCourse(displayedCourses[0].slug);
       }
     }
   };
 
-  const hasResults = courses.length > 0 || topics.length > 0;
-
   return (
-    <div ref={containerRef} className="relative w-full max-w-md lg:max-w-lg">
-      {/* Search Input Box */}
-      <div className="relative flex items-center">
-        <div className="absolute left-3.5 flex items-center pointer-events-none text-[#5B667A]">
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 text-[#1769E0] animate-spin" />
-          ) : (
-            <Search className="w-4 h-4 text-[#5B667A]" />
-          )}
-        </div>
+    <>
+      {/* ─────────────────────────────────────────────────────────────
+          1. DESKTOP SEARCH TRIGGER (>= md)
+          ───────────────────────────────────────────────────────────── */}
+      {mode !== 'mobile' && (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="hidden md:flex items-center justify-between w-full max-w-md lg:max-w-lg px-3.5 py-2 rounded-xl bg-[#F0F4F8] hover:bg-[#FFFFFF] border border-[#E5EAF0] hover:border-[#CBD5E1] transition-all text-xs text-[#5B667A] cursor-pointer shadow-2xs group"
+          aria-label="Open course search"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Search className="w-4 h-4 text-[#5B667A] group-hover:text-[#1769E0] transition-colors" />
+            <span className="truncate font-medium">Search courses, tracks, or topics...</span>
+          </div>
+          <kbd className="hidden lg:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono font-bold text-[#5B667A] bg-white border border-[#E5EAF0] rounded-md shadow-2xs">
+            ⌘K
+          </kbd>
+        </button>
+      )}
 
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => {
-            if (query.trim()) setIsOpen(true);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="Search courses, topics, or tracks..."
-          className="w-full pl-10 pr-9 py-2 rounded-xl text-xs sm:text-sm transition-all focus:outline-none bg-[#F0F4F8] border border-[#E5EAF0] border-card hover:border-[#CBD5E1] focus:bg-[#FFFFFF] focus:border-[#1769E0] focus:ring-4 focus:ring-[#1769E0]/15 text-[#14213D] text-navy-primary placeholder:text-[#5B667A] shadow-2xs font-medium"
-        />
+      {/* ─────────────────────────────────────────────────────────────
+          2. MOBILE SEARCH ICON BUTTON (< md)
+          ───────────────────────────────────────────────────────────── */}
+      {mode !== 'desktop' && (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="md:hidden w-9 h-9 rounded-xl bg-[#F0F4F8] hover:bg-[#E5EAF0] border border-[#E5EAF0] text-[#1769E0] flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0"
+          aria-label="Search courses and curriculum"
+          title="Search courses"
+        >
+          <Search className="w-4 h-4 text-[#1769E0]" />
+        </button>
+      )}
 
-        {query && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery('');
-              setIsOpen(false);
-              inputRef.current?.focus();
-            }}
-            className="absolute right-3 p-0.5 rounded-full text-[#5B667A] hover:text-[#14213D] transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
-
-      {/* Dropdown Menu */}
+      {/* ─────────────────────────────────────────────────────────────
+          3. FULL RICH SEARCH MODAL DIALOG (DESKTOP & MOBILE)
+          ───────────────────────────────────────────────────────────── */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl p-3 z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-150 bg-white bg-card-white border border-[#E5EAF0] border-card shadow-xl">
-          {isLoading && !hasResults ? (
-            <div className="flex items-center justify-center py-8 text-xs text-[#5B667A] gap-2 font-mono">
-              <Loader2 className="w-4 h-4 animate-spin text-[#1769E0]" />
-              <span>Searching coding tracks...</span>
+        <div className="fixed inset-0 z-[999999] flex flex-col items-center justify-start p-3 sm:p-6 sm:pt-14 bg-black/40 backdrop-blur-md animate-fade-in select-none overflow-y-auto">
+          {/* Backdrop Click */}
+          <div
+            className="fixed inset-0 -z-10"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+
+          <div
+            ref={modalRef}
+            className="relative w-full max-w-2xl rounded-3xl bg-white border-2 border-[#E5EAF0] shadow-2xl flex flex-col overflow-hidden max-h-[85vh] animate-scale-up"
+            role="dialog"
+            aria-modal="true"
+          >
+            {/* Top Search Input Box */}
+            <div className="p-4 sm:p-5 border-b border-[#E5EAF0] bg-white relative shrink-0">
+              <div className="relative flex items-center">
+                <div className="absolute left-3.5 flex items-center pointer-events-none text-[#1769E0]">
+                  {isLoading ? (
+                    <Loader2 className="w-5 h-5 text-[#1769E0] animate-spin" />
+                  ) : (
+                    <Search className="w-5 h-5 text-[#1769E0]" />
+                  )}
+                </div>
+
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Search courses, curriculum tracks, or topics (e.g. React, Python, JavaScript)..."
+                  className="w-full pl-11 pr-20 py-3 rounded-2xl text-sm sm:text-base font-semibold text-[#14213D] placeholder-[#94A3B8] bg-[#F7F8FA] border border-[#E5EAF0] focus:outline-none focus:border-[#1769E0] focus:ring-4 focus:ring-[#1769E0]/15 transition-all shadow-2xs"
+                />
+
+                <div className="absolute right-3 flex items-center gap-1.5">
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuery('');
+                        inputRef.current?.focus();
+                      }}
+                      className="p-1 rounded-full text-[#5B667A] hover:text-[#14213D] hover:bg-[#E5EAF0] transition-colors cursor-pointer"
+                      title="Clear search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="p-1.5 rounded-xl text-[#5B667A] hover:text-[#14213D] hover:bg-[#F0F4F8] transition-colors cursor-pointer"
+                    title="Close search"
+                  >
+                    <span className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E5EAF0] text-[#5B667A] font-bold mr-1">
+                      ESC
+                    </span>
+                    <X className="w-4 h-4 sm:hidden" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Category Quick Filter Chips */}
+              <div className="flex items-center gap-1.5 pt-3 overflow-x-auto scrollbar-none">
+                {CATEGORIES.map((cat) => {
+                  const isCatActive = activeCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setActiveCategory(cat.id)}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        isCatActive
+                          ? 'bg-[#1769E0] text-white shadow-xs'
+                          : 'bg-[#F7F8FA] hover:bg-[#E5EAF0] text-[#5B667A] border border-[#E5EAF0]'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          ) : !hasResults ? (
-            <div className="py-6 px-4 text-center space-y-1">
-              <p className="text-xs font-bold text-[#14213D]">
-                No courses or topics found for &ldquo;{query}&rdquo;
-              </p>
-              <p className="text-[11px] text-[#5B667A]">
-                Try searching for &quot;JavaScript&quot;, &quot;React&quot;, &quot;HTML&quot;, or &quot;CSS&quot;
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-[380px] overflow-y-auto scrollbar-thin pr-1">
-              {/* SECTION 1: COURSES */}
-              {courses.length > 0 && (
-                <div>
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between text-[#1769E0]">
-                    <span>Courses</span>
-                    <span className="text-[#5B667A] font-mono font-normal">{courses.length} matches</span>
+
+            {/* Scrollable Course & Topics Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 bg-[#F7F8FA]/50">
+              {/* SECTION: SUGGESTED / MATCHING COURSES */}
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#14213D] uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5 text-[#1769E0]" />
+                    <span>
+                      {query.trim()
+                        ? `Matching Courses (${displayedCourses.length})`
+                        : 'Suggested Curriculum Tracks'}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[#5B667A] font-medium">
+                    Click track to start quiz
+                  </span>
+                </div>
+
+                {displayedCourses.length === 0 && !isLoading ? (
+                  <div className="py-8 px-4 text-center rounded-2xl bg-white border border-[#E5EAF0] space-y-2">
+                    <Compass className="w-8 h-8 text-[#94A3B8] mx-auto animate-pulse" />
+                    <h4 className="text-sm font-bold text-[#14213D]">
+                      No courses found matching &ldquo;{query}&rdquo;
+                    </h4>
+                    <p className="text-xs text-[#5B667A] max-w-sm mx-auto">
+                      Try searching for popular technologies like JavaScript, React, Python, or SQL.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOpen(false);
+                        router.push('/courses');
+                      }}
+                      className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#1769E0] hover:bg-[#1257BD] transition-all shadow-xs cursor-pointer"
+                    >
+                      <span>Browse All Tracks</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {displayedCourses.map((course, idx) => {
+                      const isHighlighted = selectedIndex === idx;
+
+                      return (
+                        <div
+                          key={course.id || course.slug}
+                          onClick={() => handleSelectCourse(course.slug)}
+                          className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-start justify-between gap-3 text-left group bg-white shadow-2xs hover:shadow-md ${
+                            isHighlighted
+                              ? 'border-[#1769E0] ring-2 ring-[#1769E0]/15 bg-[#EBF3FC]/40'
+                              : 'border-[#E5EAF0] hover:border-[#1769E0]/50'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            {/* Course Icon */}
+                            <div className="w-10 h-10 rounded-xl bg-[#10233F] text-white flex items-center justify-center shrink-0 p-2 shadow-xs group-hover:scale-105 transition-transform">
+                              <CourseTechIcon slug={course.slug} className="w-6 h-6" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              {/* Header: Title + Badge */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="text-sm font-bold text-[#14213D] group-hover:text-[#1769E0] transition-colors truncate">
+                                  {course.name}
+                                </h3>
+                                {course.badge && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF3FC] text-[#1769E0] border border-[#C8DEF7] whitespace-nowrap">
+                                    {course.badge}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Description */}
+                              {course.description && (
+                                <p className="text-xs text-[#5B667A] line-clamp-1 mt-1 leading-snug">
+                                  {course.description}
+                                </p>
+                              )}
+
+                              {/* Footer Stats */}
+                              <div className="flex items-center gap-2 text-[11px] font-semibold text-[#5B667A] mt-2">
+                                <span className="inline-flex items-center gap-1 text-[#1769E0]">
+                                  <Hash className="w-3 h-3" />
+                                  <span>{course.questionCount}+ Questions</span>
+                                </span>
+                                <span>•</span>
+                                <span>{course.topicCount} Topics</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Quick Start Arrow */}
+                          <div className="w-7 h-7 rounded-lg bg-[#F7F8FA] group-hover:bg-[#1769E0] group-hover:text-white text-[#5B667A] flex items-center justify-center shrink-0 transition-colors mt-1">
+                            <Play className="w-3 h-3 fill-current ml-0.5" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION: MATCHING TOPICS (IF ANY) */}
+              {topics.length > 0 && (
+                <div className="pt-2 border-t border-[#E5EAF0]">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#14213D] uppercase tracking-wider mb-2.5 px-1">
+                    <Layers className="w-3.5 h-3.5 text-[#1769E0]" />
+                    <span>Specific Topic Lessons ({topics.length})</span>
                   </div>
 
-                  <div className="space-y-1 mt-1">
-                    {courses.map((course, idx) => {
-                      const isSelected = selectedIndex === idx;
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {topics.map((t, idx) => {
+                      const topicItemIndex = displayedCourses.length + idx;
+                      const isHighlighted = selectedIndex === topicItemIndex;
+
                       return (
-                        <button
-                          key={course.id}
-                          type="button"
-                          onClick={() => handleSelectCourse(course.slug)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-all duration-150 group cursor-pointer ${
-                            isSelected
-                              ? 'bg-[#EBF3FC] border border-[#D5E5F9] text-[#1769E0] shadow-xs'
-                              : 'hover:bg-[#F0F4F8] border border-transparent text-[#14213D]'
+                        <div
+                          key={`${t.courseSlug}:${t.topicName}`}
+                          onClick={() => handleSelectTopic(t.courseSlug, t.topicName)}
+                          className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 bg-white text-left group shadow-2xs ${
+                            isHighlighted
+                              ? 'border-[#1769E0] bg-[#EBF3FC]/50 text-[#1769E0]'
+                              : 'border-[#E5EAF0] hover:border-[#1769E0]/40'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-[#10233F] text-white p-1.5 shadow-xs">
-                              <CourseTechIcon slug={course.slug} className="w-4 h-4" />
+                            <div className="w-7 h-7 rounded-lg bg-[#EBF3FC] text-[#1769E0] flex items-center justify-center shrink-0">
+                              <BookOpen className="w-3.5 h-3.5" />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-[#14213D] group-hover:text-[#1769E0] transition-colors truncate">
-                                {course.name}
+                              <div className="text-xs font-bold text-[#14213D] group-hover:text-[#1769E0] truncate">
+                                {t.topicName}
                               </div>
-                              <div className="text-[10px] text-[#5B667A] font-mono flex items-center gap-2">
-                                <span>{course.topicCount} Topics</span>
-                                <span>•</span>
-                                <span>{course.questionCount} Questions</span>
+                              <div className="text-[10px] text-[#5B667A] truncate font-mono">
+                                in {t.courseName}
                               </div>
                             </div>
                           </div>
-
-                          <ArrowRight className="w-3.5 h-3.5 text-[#5B667A] group-hover:text-[#1769E0] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
-                        </button>
+                          <ArrowRight className="w-3.5 h-3.5 text-[#5B667A] group-hover:text-[#1769E0] group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        </div>
                       );
                     })}
                   </div>
                 </div>
               )}
-
-              {/* SECTION 2: TOPICS */}
-              {topics.length > 0 && (
-                <div>
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between border-t border-[#E5EAF0] pt-2 text-[#5B667A]">
-                    <span>Topics</span>
-                    <span className="text-[#5B667A] font-mono font-normal">{topics.length} topics</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1">
-                    {topics.map((topic, tIdx) => {
-                      const itemIdx = courses.length + tIdx;
-                      const isSelected = selectedIndex === itemIdx;
-
-                      return (
-                        <button
-                          key={`${topic.courseSlug}:${topic.topicName}`}
-                          type="button"
-                          onClick={() => handleSelectTopic(topic.courseSlug, topic.topicName)}
-                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all duration-150 group cursor-pointer ${
-                            isSelected
-                              ? 'bg-[#EBF3FC] border border-[#D5E5F9] text-[#1769E0]'
-                              : 'hover:bg-[#F0F4F8] border border-transparent text-[#14213D]'
-                          }`}
-                        >
-                          <Layers className="w-3.5 h-3.5 shrink-0 text-[#1769E0]" />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-semibold text-[#14213D] group-hover:text-[#1769E0] truncate">
-                              {topic.topicName}
-                            </div>
-                            <div className="text-[9px] text-[#5B667A] font-mono truncate">
-                              in {topic.courseName}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Footer CTA */}
-              <div className="pt-2 border-t border-[#E5EAF0] px-2 flex items-center justify-between text-[11px] text-[#5B667A]">
-                <span className="font-mono">Press ↑↓ to navigate • ↵ to select</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOpen(false);
-                    router.push('/courses');
-                  }}
-                  className="font-bold flex items-center gap-1 text-[#1769E0] hover:text-[#1257BD] transition-colors"
-                >
-                  <span>View all courses</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
             </div>
-          )}
+
+            {/* Modal Bottom Dock / Keyboard Hints */}
+            <div className="p-3 sm:p-4 border-t border-[#E5EAF0] bg-white flex items-center justify-between text-xs text-[#5B667A] shrink-0">
+              <div className="hidden sm:flex items-center gap-2 font-medium">
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0F4F8] border border-[#E5EAF0] text-[10px] font-mono font-bold">
+                    ↑↓
+                  </kbd>
+                  <span>navigate</span>
+                </span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0F4F8] border border-[#E5EAF0] text-[10px] font-mono font-bold">
+                    ↵
+                  </kbd>
+                  <span>select</span>
+                </span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 rounded bg-[#F0F4F8] border border-[#E5EAF0] text-[10px] font-mono font-bold">
+                    esc
+                  </kbd>
+                  <span>close</span>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  router.push('/courses');
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 font-bold text-[#1769E0] hover:text-[#1257BD] transition-colors py-1 cursor-pointer"
+              >
+                <span>Explore all curriculum tracks</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

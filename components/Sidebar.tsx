@@ -85,6 +85,29 @@ export function Sidebar() {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Listen to header hamburger toggle events
+  useEffect(() => {
+    const handleToggle = () => setMobileOpen((prev) => !prev);
+    const handleOpen = () => setMobileOpen(true);
+    const handleClose = () => setMobileOpen(false);
+
+    window.addEventListener('cq-toggle-sidebar', handleToggle);
+    window.addEventListener('cq-open-sidebar', handleOpen);
+    window.addEventListener('cq-close-sidebar', handleClose);
+
+    return () => {
+      window.removeEventListener('cq-toggle-sidebar', handleToggle);
+      window.removeEventListener('cq-open-sidebar', handleOpen);
+      window.removeEventListener('cq-close-sidebar', handleClose);
+    };
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('cq-sidebar-open-change', { detail: { open: mobileOpen } })
+    );
+  }, [mobileOpen]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropUpRef.current && !dropUpRef.current.contains(event.target as Node)) {
@@ -139,20 +162,7 @@ export function Sidebar() {
 
   return (
     <>
-      {/* ─────────────────────────────────────────────────────────────
-          1. MOBILE DRAWER TRIGGER (< md)
-          ───────────────────────────────────────────────────────────── */}
-      <div className="md:hidden fixed bottom-4 right-4 z-50">
-        <button
-          type="button"
-          onClick={() => setMobileOpen((prev) => !prev)}
-          className="w-12 h-12 rounded-full bg-[#1769E0] text-white flex items-center justify-center shadow-lg shadow-blue-950/40 cursor-pointer"
-          aria-label="Toggle navigation menu"
-        >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
-
+      {/* Mobile Drawer Overlay Backdrop */}
       {mobileOpen && (
         <div
           className="md:hidden fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
@@ -204,7 +214,7 @@ export function Sidebar() {
               </div>
             </Link>
 
-            {/* Toggle Button */}
+            {/* Desktop Toggle Button */}
             <button
               type="button"
               onClick={toggleCollapse}
@@ -216,6 +226,16 @@ export function Sidebar() {
                   isCollapsed ? 'rotate-180 text-[#599BFF]' : 'rotate-0 text-white'
                 }`}
               />
+            </button>
+
+            {/* Mobile Close Button */}
+            <button
+              type="button"
+              onClick={() => setMobileOpen(false)}
+              title="Close Menu"
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-white transition-all cursor-pointer shadow-sm shrink-0"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

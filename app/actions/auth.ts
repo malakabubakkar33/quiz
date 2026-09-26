@@ -58,17 +58,17 @@ export const getAuthUser = cache(async (): Promise<SessionUser | null> => {
     // If Clerk userId is present, fetch/sync Prisma user
     if (clerkUserId) {
       try {
-        // Fast-path: query Prisma with 1500ms timeout
+        // Fast-path: query Prisma with 8000ms timeout
         let dbUser = await Promise.race([
           prisma.user.findUnique({ where: { clerkUserId } }),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
         ]).catch(() => null);
 
         if (!dbUser) {
           // Attempt currentUser fetch with timeout
           const clerkUser = await Promise.race([
             currentUser().catch(() => null),
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
           ]).catch(() => null);
 
           const email = clerkUser?.emailAddresses?.[0]?.emailAddress || '';
@@ -84,7 +84,7 @@ export const getAuthUser = cache(async (): Promise<SessionUser | null> => {
             if (email) {
               const existingByEmail = await Promise.race([
                 prisma.user.findUnique({ where: { email } }),
-                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000)),
               ]).catch(() => null);
 
               if (existingByEmail) {
@@ -98,7 +98,7 @@ export const getAuthUser = cache(async (): Promise<SessionUser | null> => {
                       lastActiveAt: new Date(),
                     },
                   }),
-                  new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+                  new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000)),
                 ]).catch(() => null);
               }
             }
@@ -123,7 +123,7 @@ export const getAuthUser = cache(async (): Promise<SessionUser | null> => {
                     lastActiveAt: new Date(),
                   },
                 }),
-                new Promise<null>((resolve) => setTimeout(() => resolve(null), 1200)),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
               ]).catch(() => null);
             }
           } catch (syncErr) {
@@ -180,7 +180,7 @@ export const getAuthUser = cache(async (): Promise<SessionUser | null> => {
             ],
           },
         }),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
       ]).catch(() => null);
 
       if (dbUser) {

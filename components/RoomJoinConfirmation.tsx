@@ -15,6 +15,7 @@ import {
   Play,
   LayoutDashboard,
   AlertTriangle,
+  GraduationCap,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -91,79 +92,78 @@ export function RoomJoinConfirmation({ room }: Props) {
   }
 
   return (
-    <div className="rounded-3xl bg-slate-900/80 border border-slate-800 p-6 sm:p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="rounded-3xl bg-white border-2 border-[#E5EAF0] p-6 sm:p-8 shadow-sm relative overflow-hidden text-[#14213D] space-y-6">
       {/* Header */}
-      <div className="relative space-y-3 pb-6 border-b border-slate-800">
+      <div className="relative space-y-3 pb-6 border-b border-[#E5EAF0]">
         <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#EBF3FC] border border-[#C8DEF7] text-[#1769E0]">
             <BookOpen className="w-3.5 h-3.5" />
-            {room.courseName}
+            <span>{room.courseName}</span>
           </span>
-          <span className="font-mono text-sm font-bold text-slate-400 bg-slate-800/80 px-3 py-1 rounded-lg border border-slate-700">
+          <span className="font-mono text-sm font-bold text-[#1769E0] bg-[#F7F8FA] px-3 py-1 rounded-xl border border-[#E5EAF0]">
             #{room.roomCode}
           </span>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#14213D] font-serif-title tracking-tight">
           {room.quizName}
         </h1>
 
         {room.description && (
-          <p className="text-sm text-slate-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#5B667A] leading-relaxed">
             {room.description}
           </p>
         )}
 
-        <div className="text-xs text-slate-400 flex items-center gap-1.5">
+        <div className="text-xs text-[#5B667A] flex items-center gap-1.5">
+          <GraduationCap className="w-3.5 h-3.5 text-[#1769E0]" />
           <span>Hosted by</span>
-          <span className="font-medium text-slate-200">{room.creatorName}</span>
+          <strong className="text-[#14213D]">{room.creatorName}</strong>
         </div>
       </div>
 
       {/* Details Grid */}
-      <div className="grid grid-cols-3 gap-3 py-6">
-        <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-center">
-          <HelpCircle className="w-4 h-4 text-cyan-400 mx-auto mb-1.5" />
-          <div className="text-lg font-bold text-white">{room.questionCount}</div>
-          <div className="text-[11px] text-slate-400 uppercase font-semibold">Questions</div>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="p-3.5 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] text-center space-y-1">
+          <HelpCircle className="w-4 h-4 text-[#1769E0] mx-auto" />
+          <div className="text-lg font-bold text-[#14213D]">{room.questionCount}</div>
+          <div className="text-[11px] text-[#5B667A] uppercase font-bold tracking-wider">Questions</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-center">
-          <Clock className="w-4 h-4 text-amber-400 mx-auto mb-1.5" />
-          <div className="text-lg font-bold text-white">{room.timeLimit}m</div>
-          <div className="text-[11px] text-slate-400 uppercase font-semibold">Time Limit</div>
+        <div className="p-3.5 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] text-center space-y-1">
+          <Clock className="w-4 h-4 text-[#B45309] mx-auto" />
+          <div className="text-lg font-bold text-[#14213D]">{room.timeLimit}m</div>
+          <div className="text-[11px] text-[#5B667A] uppercase font-bold tracking-wider">Time Limit</div>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-center">
-          <Users className="w-4 h-4 text-indigo-400 mx-auto mb-1.5" />
-          <div className="text-lg font-bold text-white">{room.participantsCount}</div>
-          <div className="text-[11px] text-slate-400 uppercase font-semibold">Joined</div>
+        <div className="p-3.5 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] text-center space-y-1">
+          <Users className="w-4 h-4 text-[#0F8A52] mx-auto" />
+          <div className="text-lg font-bold text-[#14213D]">{room.participantsCount}</div>
+          <div className="text-[11px] text-[#5B667A] uppercase font-bold tracking-wider">Joined</div>
         </div>
       </div>
 
       {/* Instructions / Rules */}
       {room.instructions ? (
-        <div className="mb-6 p-4 rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-1.5">
-          <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" /> Host Instructions
+        <div className="p-4 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] space-y-1.5">
+          <div className="text-xs font-bold text-[#14213D] flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#1769E0]" />
+            <span>Host Instructions</span>
           </div>
-          <p className="text-xs text-slate-400 whitespace-pre-line leading-relaxed">
+          <p className="text-xs text-[#5B667A] whitespace-pre-line leading-relaxed">
             {room.instructions}
           </p>
         </div>
       ) : (
-        <div className="mb-6 p-4 rounded-xl bg-slate-950/40 border border-slate-800/80 text-xs text-slate-400 flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+        <div className="p-4 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] text-xs text-[#5B667A] flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#1769E0] shrink-0" />
           <span>Tab switches and focus loss are monitored during this live room quiz.</span>
         </div>
       )}
 
       {error && (
-        <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
+        <div className="p-3.5 rounded-xl bg-[#FDF2F2] border border-[#FECDCA] text-[#D92D20] text-xs font-semibold flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0 text-[#D92D20]" />
           <span>{error}</span>
         </div>
       )}
@@ -171,11 +171,11 @@ export function RoomJoinConfirmation({ room }: Props) {
       {/* Actions */}
       <div className="space-y-3">
         {isCompleted ? (
-          <div className="text-center p-4 rounded-xl bg-slate-800/40 border border-slate-700/50">
-            <p className="text-sm font-semibold text-slate-300 mb-2">This quiz room has already ended.</p>
+          <div className="text-center p-4 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0]">
+            <p className="text-sm font-bold text-[#14213D] mb-2">This quiz room has already ended.</p>
             <Link
               href={`/room/${room.roomCode}/dashboard`}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-cyan-400 hover:text-cyan-300"
+              className="inline-flex items-center gap-2 text-xs font-bold text-[#1769E0] hover:text-[#1257BD]"
             >
               View Room Results <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -185,16 +185,16 @@ export function RoomJoinConfirmation({ room }: Props) {
             <button
               onClick={handleJoin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-bold text-sm text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-[#1769E0] hover:bg-[#1257BD] transition-all shadow-md shadow-[#1769E0]/20 disabled:opacity-50 cursor-pointer active:scale-[0.99]"
             >
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   <span>Joining Room...</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4 fill-slate-950" />
+                  <Play className="w-4 h-4 fill-white" />
                   <span>Enter Waiting Room</span>
                 </>
               )}
@@ -203,9 +203,9 @@ export function RoomJoinConfirmation({ room }: Props) {
             {isHost && (
               <Link
                 href={`/room/${room.roomCode}/dashboard`}
-                className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-xs text-slate-300 bg-slate-800/80 hover:bg-slate-800 hover:text-white border border-slate-700 transition-all"
+                className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-bold text-xs text-[#14213D] bg-[#F7F8FA] hover:bg-[#E5EAF0] border border-[#E5EAF0] transition-all"
               >
-                <LayoutDashboard className="w-4 h-4 text-cyan-400" />
+                <LayoutDashboard className="w-4 h-4 text-[#1769E0]" />
                 <span>Open Host Dashboard</span>
               </Link>
             )}
@@ -215,7 +215,7 @@ export function RoomJoinConfirmation({ room }: Props) {
         <div className="text-center pt-2">
           <Link
             href="/join-quiz"
-            className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+            className="text-xs text-[#5B667A] hover:text-[#14213D] transition-colors font-medium"
           >
             ← Enter a different room code
           </Link>

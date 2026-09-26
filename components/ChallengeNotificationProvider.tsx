@@ -248,62 +248,56 @@ export function ChallengeNotificationProvider() {
 
   return (
     <>
-      {/* Real-Time Incoming Duel Battle Popup - Center Screen, Big Size & Full Design */}
+      {/* Real-Time Incoming Duel Battle Popup - Academic Theme */}
       {incomingDuel && (
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-2xl animate-fade-in select-none">
-          <div className="relative w-full max-w-xl rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-rose-500/70 p-6 sm:p-8 space-y-6 shadow-[0_0_80px_rgba(244,63,94,0.35)] text-center overflow-hidden transform transition-all animate-[fadeInScale_0.35s_cubic-bezier(0.16,1,0.3,1)]">
-            {/* Ambient Background Aura */}
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-rose-500/25 rounded-full blur-3xl pointer-events-none animate-pulse" />
-            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
-
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md animate-fade-in select-none">
+          <div className="relative w-full max-w-xl rounded-3xl bg-white border-2 border-[#E5EAF0] p-6 sm:p-8 space-y-6 shadow-2xl text-center overflow-hidden transform transition-all animate-[fadeInScale_0.35s_cubic-bezier(0.16,1,0.3,1)]">
             {/* Battle Icon Badge */}
-            <div className="relative mx-auto w-20 h-20 rounded-3xl bg-gradient-to-tr from-rose-600 via-pink-600 to-amber-500 p-1 shadow-2xl shadow-rose-600/40 flex items-center justify-center">
-              <div className="w-full h-full rounded-[22px] bg-slate-950 flex items-center justify-center text-rose-400">
-                <Swords className="w-10 h-10 animate-pulse text-rose-400" />
-              </div>
+            <div className="relative mx-auto w-16 h-16 rounded-2xl bg-[#EBF3FC] border border-[#C8DEF7] flex items-center justify-center text-[#1769E0] shadow-xs">
+              <Swords className="w-8 h-8 animate-pulse text-[#1769E0]" />
             </div>
 
             {/* Duel Header */}
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm">
+            <div className="space-y-1.5">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#EBF3FC] text-[#1769E0] border border-[#C8DEF7]">
                 <Sparkles className="w-3.5 h-3.5" /> 1v1 Code Duel Request
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              <h3 className="text-2xl sm:text-3xl font-bold text-[#14213D] font-serif-title tracking-tight">
                 Challenge Invitation!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto">
+              <p className="text-xs sm:text-sm text-[#5B667A] max-w-md mx-auto">
                 A friend has challenged you to an arena battle. Randomized questions, highest score wins!
               </p>
             </div>
 
             {/* Challenger Card & Match Parameters */}
-            <div className="p-5 rounded-2xl bg-slate-950/85 border border-slate-800/90 space-y-4 shadow-inner text-left">
+            <div className="p-5 rounded-2xl bg-[#F7F8FA] border border-[#E5EAF0] space-y-4 text-left shadow-2xs">
               {/* Opponent Info Row */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 p-0.5 overflow-hidden shrink-0 shadow-lg shadow-rose-900/30">
+                <div className="w-14 h-14 rounded-2xl bg-white border border-[#E5EAF0] p-0.5 overflow-hidden shrink-0 shadow-xs">
                   {incomingDuel.challengerAvatar ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={incomingDuel.challengerAvatar}
                       alt="Challenger"
-                      className="w-full h-full object-cover rounded-[14px]"
+                      className="w-full h-full object-cover rounded-[12px]"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center font-black text-xl text-white bg-slate-900 rounded-[14px]">
+                    <div className="w-full h-full flex items-center justify-center font-bold text-lg text-white bg-[#10233F] rounded-[12px]">
                       {incomingDuel.challengerName[0]?.toUpperCase() || 'D'}
                     </div>
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-rose-400 font-bold uppercase tracking-wider">
+                  <div className="text-xs text-[#1769E0] font-bold uppercase tracking-wider">
                     Challenger
                   </div>
-                  <div className="text-lg font-extrabold text-white truncate">
+                  <div className="text-base font-bold text-[#14213D] truncate">
                     {incomingDuel.challengerName}
                   </div>
                   {incomingDuel.challengerUsername && (
-                    <div className="text-xs font-mono text-cyan-400 truncate">
+                    <div className="text-xs font-mono text-[#5B667A] truncate">
                       @{incomingDuel.challengerUsername}
                     </div>
                   )}
@@ -311,24 +305,24 @@ export function ChallengeNotificationProvider() {
               </div>
 
               {/* Match Parameters Grid */}
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
-                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#E5EAF0]">
+                <div className="p-3 rounded-xl bg-white border border-[#E5EAF0] flex items-center gap-3 shadow-2xs">
+                  <div className="p-2 rounded-lg bg-[#EBF3FC] text-[#1769E0]">
                     <Code2 className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[11px] text-slate-400 font-medium">Battlefield</div>
-                    <div className="text-xs font-bold text-white truncate">{incomingDuel.courseName}</div>
+                    <div className="text-[11px] text-[#5B667A] font-medium">Battlefield</div>
+                    <div className="text-xs font-bold text-[#14213D] truncate">{incomingDuel.courseName}</div>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-400">
+                <div className="p-3 rounded-xl bg-white border border-[#E5EAF0] flex items-center gap-3 shadow-2xs">
+                  <div className="p-2 rounded-lg bg-[#EBF3FC] text-[#1769E0]">
                     <Clock className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[11px] text-slate-400 font-medium">Format</div>
-                    <div className="text-xs font-bold text-white truncate">
+                    <div className="text-[11px] text-[#5B667A] font-medium">Format</div>
+                    <div className="text-xs font-bold text-[#14213D] truncate">
                       {incomingDuel.totalQuestions} Qs • {Math.floor(incomingDuel.timeLimitSec / 60)} Min
                     </div>
                   </div>
@@ -342,7 +336,7 @@ export function ChallengeNotificationProvider() {
                 type="button"
                 onClick={handleDecline}
                 disabled={isResponding}
-                className="w-1/3 py-3.5 rounded-2xl text-xs sm:text-sm font-bold text-slate-300 hover:text-white bg-slate-800/90 hover:bg-slate-750 border border-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+                className="w-1/3 py-3 rounded-xl text-xs sm:text-sm font-bold text-[#5B667A] hover:text-[#14213D] bg-[#F7F8FA] hover:bg-[#E5EAF0] border border-[#E5EAF0] transition-colors cursor-pointer disabled:opacity-50"
               >
                 Decline
               </button>
@@ -351,16 +345,16 @@ export function ChallengeNotificationProvider() {
                 type="button"
                 onClick={handleAccept}
                 disabled={isResponding}
-                className="flex-1 py-3.5 rounded-2xl text-xs sm:text-base font-black text-slate-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 shadow-xl shadow-emerald-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#1769E0] hover:bg-[#1257BD] shadow-md shadow-[#1769E0]/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isResponding ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Entering Arena...</span>
                   </>
                 ) : (
                   <>
-                    <Swords className="w-5 h-5" />
+                    <Swords className="w-4 h-4" />
                     <span>Accept & Enter Arena</span>
                   </>
                 )}
@@ -372,9 +366,9 @@ export function ChallengeNotificationProvider() {
 
       {/* Floating Feedback Toast */}
       {feedbackToast && (
-        <div className="fixed bottom-6 right-6 z-[999999] p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl flex items-center gap-3 animate-fade-in text-white text-xs sm:text-sm font-semibold max-w-sm">
-          <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-400 shrink-0">
-            <Swords className="w-5 h-5" />
+        <div className="fixed bottom-6 right-6 z-[999999] p-4 rounded-2xl bg-white border-2 border-[#E5EAF0] shadow-xl flex items-center gap-3 animate-fade-in text-[#14213D] text-xs sm:text-sm font-semibold max-w-sm">
+          <div className="p-2 rounded-xl bg-[#EBF3FC] text-[#1769E0] shrink-0">
+            <Swords className="w-4 h-4" />
           </div>
           <span>{feedbackToast.message}</span>
         </div>
