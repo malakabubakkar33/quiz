@@ -33,6 +33,10 @@ export const metadata: Metadata = {
   },
 };
 
+const CLERK_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  'pk_test_bXVzaWNhbC1jb3VnYXItOTc2OC5jbGVyay5hY2NvdW50cy5kZXYk';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -57,7 +61,7 @@ export default function RootLayout({
         className="min-h-screen flex flex-col bg-page text-navy-primary bg-[#F7F8FA] text-[#14213D] font-academic relative selection:bg-[#1769E0]/20 selection:text-[#1769E0] overflow-x-hidden w-full max-w-full"
         suppressHydrationWarning
       >
-        <ClerkProvider>
+        <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
           {/* Startup & Navigation Loaders */}
           <Suspense fallback={null}>
             <RouteProgress />
